@@ -38,6 +38,8 @@
 #        make IEEE=1              # Will select debug options as long as a compiler is selected as well
 # e.g. make COMPILER=INTEL MPI_COMPILER=mpiifort C_MPI_COMPILER=mpiicc DEBUG=1 IEEE=1 # will compile with the intel compiler with intel debug and ieee flags included
 
+HYPRE_DIR=/home/dab/Code/hypre/hypre-2.9.0b/src/hypre
+
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
@@ -92,12 +94,12 @@ ifdef IEEE
   I3E=$(I3E_$(COMPILER))
 endif
 
-FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS)
-CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c
+FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) -lm -lstdc++
+CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -I$(HYPRE_DIR)/include -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
-clover_leaf: c_lover *.f90 Makefile
+clover_leaf: c_lover hypre_leaf *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
 	data.f90			\
 	definitions.f90			\
@@ -156,6 +158,8 @@ clover_leaf: c_lover *.f90 Makefile
 	advec_mom_kernel_c.o            \
 	advec_cell_kernel_c.o           \
 	tea_leaf_kernel_c.o             \
+	HypreLeaf.o                     \
+	$(HYPRE_DIR)/lib/libHYPRE.a     \
 	-o clover_leaf; echo $(MESSAGE)
 
 c_lover: *.c Makefile
@@ -170,6 +174,9 @@ c_lover: *.c Makefile
 	advec_mom_kernel_c.c            \
 	advec_cell_kernel_c.c           \
 	tea_leaf_kernel_c.c
+
+hypre_leaf: *.C
+	$(CXX_MPI_COMPILER) $(CFLAGS) HypreLeaf.C
 
 
 clean:

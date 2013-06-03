@@ -66,6 +66,21 @@ SUBROUTINE start
 
   CALL clover_barrier
 
+
+  IF(use_HYPRE_kernels)THEN
+    DO c=1,number_of_chunks
+      IF(chunks(c)%task .EQ. parallel%task)THEN
+          CALL setup_hypre(chunks(c)%field%left, &
+              chunks(c)%field%right,              &
+              chunks(c)%field%bottom,             &
+              chunks(c)%field%top,                &
+              chunks(c)%field%top,                &
+              eps,                                &
+              max_iters)
+      ENDIF
+    ENDDO
+  ENDIF
+
   DO c=1,number_of_chunks
     IF(chunks(c)%task.EQ.parallel%task)THEN
       CALL clover_allocate_buffers(c)

@@ -45,6 +45,7 @@ MODULE definitions_module
    LOGICAL      :: use_OA_kernels
    LOGICAL      :: use_Tealeaf
    LOGICAL      :: use_Hydro
+   LOGICAL      :: use_HYPRE_kernels
    INTEGER      :: max_iters
    REAL(KIND=8) :: eps
    INTEGER      :: coefficient

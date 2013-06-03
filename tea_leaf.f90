@@ -15,7 +15,6 @@ SUBROUTINE tea_leaf()
 
   INTEGER :: fields(NUM_FIELDS)
 
-
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
@@ -25,7 +24,7 @@ SUBROUTINE tea_leaf()
       fields(FIELD_DENSITY1) = 1
       CALL update_halo(fields,2)
 
-      ! INIT
+      ! INIT - set up coefficients based on material temperature
       IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                       &
@@ -72,49 +71,69 @@ SUBROUTINE tea_leaf()
       rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2);
       ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2);
 
-      DO n=1,max_iters
+      IF(use_fortran_kernels .OR. use_C_kernels) THEN
+        DO n=1,max_iters
 
-        IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                rx,                                          &
-                ry,                                          &
-                chunks(c)%field%work_array6,                 &
-                chunks(c)%field%work_array7,                 &
-                error,                                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%u,                           &
-                chunks(c)%field%work_array2)
-        ELSEIF(use_C_kernels) THEN
-            CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                rx,                                          &
-                ry,                                          &
-                chunks(c)%field%work_array6,                 &
-                chunks(c)%field%work_array7,                 &
-                error,                                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%u,                           &
-                chunks(c)%field%work_array2)
-        ENDIF
+          IF(use_fortran_kernels) THEN
+              CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
+                  chunks(c)%field%x_max,                       &
+                  chunks(c)%field%y_min,                       &
+                  chunks(c)%field%y_max,                       &
+                  rx,                                          &
+                  ry,                                          &
+                  chunks(c)%field%work_array6,                 &
+                  chunks(c)%field%work_array7,                 &
+                  error,                                       &
+                  chunks(c)%field%work_array1,                 &
+                  chunks(c)%field%u,                           &
+                  chunks(c)%field%work_array2)
+          ELSEIF(use_C_kernels) THEN
+              CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
+                  chunks(c)%field%x_max,                       &
+                  chunks(c)%field%y_min,                       &
+                  chunks(c)%field%y_max,                       &
+                  rx,                                          &
+                  ry,                                          &
+                  chunks(c)%field%work_array6,                 &
+                  chunks(c)%field%work_array7,                 &
+                  error,                                       &
+                  chunks(c)%field%work_array1,                 &
+                  chunks(c)%field%u,                           &
+                  chunks(c)%field%work_array2)
+          ENDIF
 
-        ! CALL update_halo
-        fields=0
-        fields(FIELD_U) = 1
-        CALL update_halo(fields,2)
+          ! CALL update_halo
+          fields=0
+          fields(FIELD_U) = 1
+          CALL update_halo(fields,2)
 
-        CALL clover_max(error)
+          CALL clover_max(error)
 
-        IF (error .LT. eps) EXIT
+          IF (error .LT. eps) EXIT
 
-      ENDDO
-
-      PRINT *, 'ERR: ', error
-      PRINT *, 'ITER: ', (n-1)
+        ENDDO
+      ELSEIF (use_HYPRE_kernels) THEN
+        ! HYPRE STUFF HERE
+        CALL hypre_solve(                                      &
+              chunks(c)%field%left,                            &
+              chunks(c)%field%right,                           &
+              chunks(c)%field%bottom,                          &
+              chunks(c)%field%top,                             &
+              chunks(c)%field%x_min,                           &
+              chunks(c)%field%x_max,                           &
+              chunks(c)%field%y_min,                           &
+              chunks(c)%field%y_max,                           &
+              1,                                               &
+              grid%x_cells,                                    &
+              1,                                               &
+              grid%y_cells,                                    &
+              rx,                                              &
+              ry,                                              &
+              chunks(c)%field%work_array6,                     &
+              chunks(c)%field%work_array7,                     &
+              chunks(c)%field%u,                               &
+              chunks(c)%chunk_neighbours)
+      ENDIF
 
       ! RESET
       IF(use_fortran_kernels) THEN
