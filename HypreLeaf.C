@@ -228,10 +228,10 @@ void HypreLeaf::solve(
              * 1 | 1 | 2
              *   | 3 |
              */
-            int c2 = Kx[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
-            int c3 = Kx[ARRAY2D(j+1,k,x_min-2,y_min-2,nx)];
-            int c4 = Ky[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
-            int c5 = Ky[ARRAY2D(j,k+1,x_min-2,y_min-2,nx)];
+            double c2 = Kx[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
+            double c3 = Kx[ARRAY2D(j+1,k,x_min-2,y_min-2,nx)];
+            double c4 = Ky[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
+            double c5 = Ky[ARRAY2D(j,k+1,x_min-2,y_min-2,nx)];
 
             coefficients[n] = (1+2*rx+2*ry);
             coefficients[n+1] = -rx*c2;
