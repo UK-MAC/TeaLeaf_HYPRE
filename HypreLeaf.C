@@ -233,7 +233,7 @@ void HypreLeaf::solve(
             double c4 = Ky[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
             double c5 = Ky[ARRAY2D(j,k+1,x_min-2,y_min-2,nx)];
 
-            coefficients[n] = (1+2*rx+2*ry);
+            coefficients[n] = (1.0+(2.0*rx)+(2.0*ry));
             coefficients[n+1] = -rx*c2;
             coefficients[n+2] = -rx*c3;
             coefficients[n+3] = -ry*c4;
@@ -347,18 +347,23 @@ void HypreLeaf::solve(
 
     for (int j = bottom; j <= top; j++) {
         for (int i = left; i <= right; i++) {
+            double c2 = Kx[ARRAY2D(i,j,xmn,ymn,nx+1)];
+            double c3 = Kx[ARRAY2D(i+1,j,xmn,ymn,nx+1)];
+            double c4 = Ky[ARRAY2D(i,j,xmn,ymn,nx+1)];
+            double c5 = Ky[ARRAY2D(i,j+1,xmn,ymn,nx+1)];
+
             values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
 
             if(i == global_xmin) {
-                values[n] = values[n] + rx*u0[ARRAY2D(i-1,j,xmn,ymn,nx)];
+                values[n] += rx*c2*u0[ARRAY2D(i-1,j,xmn,ymn,nx)];
             } else if(i == global_xmax) {
-                values[n] = values[n] + rx*u0[ARRAY2D(i+1,j,xmn,ymn,nx)];
+                values[n] += rx*c3*u0[ARRAY2D(i+1,j,xmn,ymn,nx)];
             }
 
             if (j == global_ymin) {
-                values[n] = values[n] + ry*u0[ARRAY2D(i,j-1,xmn,ymn,nx)];
+                values[n] += ry*c4*u0[ARRAY2D(i,j-1,xmn,ymn,nx)];
             } else if (j == global_ymax) {
-                values[n] = values[n] + ry*u0[ARRAY2D(i,j+1,xmn,ymn,nx)];
+                values[n] += ry*c5*u0[ARRAY2D(i,j+1,xmn,ymn,nx)];
             }
             n++;
         }
@@ -368,8 +373,8 @@ void HypreLeaf::solve(
 
     n = 0;
 
-    for (int j = y_min; j <= y_max; j++) {
-        for (int i = x_min; i <= x_max; i++) {
+    for (int j = bottom; j <= top; j++) {
+        for (int i = left; i <= right; i++) {
             values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
             n++;
         }
@@ -387,8 +392,8 @@ void HypreLeaf::solve(
 
     n = 0;
 
-    for (int j = y_min; j <= y_max; j++) {
-        for (int i = x_min; i <= x_max; i++) {
+    for (int j = bottom; j <= top; j++) {
+        for (int i = left; i <= right; i++) {
             u0[ARRAY2D(i,j,xmn,ymn,nx)] = values[n];
             n++;
         }
