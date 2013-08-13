@@ -168,7 +168,7 @@ void HypreLeaf::init(
     int ny = top - bottom + 1;
     int nvalues = nx*ny;
 
-    coefficients = new double[nvalues];
+    coefficients = new double[nvalues*5];
     values = new double[nvalues];
 }
 
@@ -333,6 +333,11 @@ void HypreLeaf::solve(
         }
     }
 
+    ilower[0] = left;
+    ilower[1] = bottom;
+    iupper[0] = right;
+    iupper[1] = top;
+
     HYPRE_StructMatrixAssemble(A);
 
     HYPRE_StructVectorInitialize(b);
@@ -387,6 +392,9 @@ void HypreLeaf::solve(
         
     HYPRE_StructJacobiSetup(solver, A, b, x);
     HYPRE_StructJacobiSolve(solver, A, b, x);
+
+    int iters = 0;
+    HYPRE_StructJacobiGetNumIterations(solver, &iters);
 
     HYPRE_StructVectorGetBoxValues(x, ilower, iupper, values);
 

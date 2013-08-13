@@ -74,7 +74,6 @@ SUBROUTINE start
               chunks(c)%field%right,              &
               chunks(c)%field%bottom,             &
               chunks(c)%field%top,                &
-              chunks(c)%field%top,                &
               eps,                                &
               max_iters)
       ENDIF

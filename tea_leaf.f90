@@ -71,7 +71,7 @@ SUBROUTINE tea_leaf()
       rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2);
       ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2);
 
-      IF(use_fortran_kernels .OR. use_C_kernels) THEN
+      IF(.NOT. use_HYPRE_kernels) THEN
         DO n=1,max_iters
 
           IF(use_fortran_kernels) THEN
@@ -112,7 +112,7 @@ SUBROUTINE tea_leaf()
           IF (error .LT. eps) EXIT
 
         ENDDO
-      ELSEIF (use_HYPRE_kernels) THEN
+      ELSE
         ! HYPRE STUFF HERE
         CALL hypre_solve(                                      &
               chunks(c)%field%left,                            &
