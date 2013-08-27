@@ -1,5 +1,7 @@
 #include "HypreLeaf.h"
 
+#include <iostream>
+
 #define ARRAY2D(i,j,imin,jmin,ni) (i-(imin))+(((j)-(jmin))*(ni))
 #define EXTERNAL_FACE -1
 
@@ -157,6 +159,7 @@ void HypreLeaf::init(
     }
 
     HYPRE_StructMatrixCreate(MPI_COMM_WORLD, grid, stencil, &A);
+
     HYPRE_StructVectorCreate(MPI_COMM_WORLD, grid, &b);
     HYPRE_StructVectorCreate(MPI_COMM_WORLD, grid, &x);
 
@@ -218,26 +221,41 @@ void HypreLeaf::solve(
 
     int n = 0;
     //for(int i = 0; i < nvalues; i += nentries) {
-    for(int k = y_min; k <= y_max; k++) {
-        for(int j = x_min; j <= x_max; j++) {
+    for(int k = bottom; k <= top; k++) {
+        for(int j = left; j <= right; j++) {
 
             /*
              * Stencil indices:
              *
+             *   | 5 |
+             * 2 | 1 | 3
              *   | 4 |
-             * 1 | 1 | 2
-             *   | 3 |
              */
-            double c2 = Kx[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
-            double c3 = Kx[ARRAY2D(j+1,k,x_min-2,y_min-2,nx)];
-            double c4 = Ky[ARRAY2D(j,k,x_min-2,y_min-2,nx)];
-            double c5 = Ky[ARRAY2D(j,k+1,x_min-2,y_min-2,nx)];
+            double c2 = Kx[ARRAY2D(j,k,left-2,bottom-2,nx)];
+            double c3 = Kx[ARRAY2D(j+1,k,left-2,bottom-2,nx)];
+            double c4 = Ky[ARRAY2D(j,k,left-2,bottom-2,nx)];
+            double c5 = Ky[ARRAY2D(j,k+1,left-2,bottom-2,nx)];
 
             coefficients[n] = (1.0+(2.0*rx)+(2.0*ry));
-            coefficients[n+1] = -rx*c2;
-            coefficients[n+2] = -rx*c3;
-            coefficients[n+3] = -ry*c4;
-            coefficients[n+4] = -ry*c5;
+            coefficients[n+1] = (-1*rx)*c2;
+            coefficients[n+2] = (-1*rx)*c3;
+            coefficients[n+3] = (-1*ry)*c4;
+            coefficients[n+4] = (-1*ry)*c5;
+
+            if(j == global_xmin) {
+                coefficients[n+2] = (-2*rx)*c3;
+            } 
+            if(j == global_xmax) {
+                coefficients[n+1] = (-2*rx)*c2;
+            }
+
+            if (k == global_ymin) {
+                coefficients[n+4] = (-2*ry)*c5;
+            } 
+            if (k == global_ymax) {
+                coefficients[n+3] = (-2*ry)*c4;
+            }
+
 
             n += nentries;
         }
@@ -260,13 +278,13 @@ void HypreLeaf::solve(
 
                         double* boundary_coefficients = new double[ny];
 
-                        for(i = 0; i < ny; i++) {
-                            boundary_coefficients[i] = 0.0;
+                        for(int j = 0; j < ny; j++) {
+                            boundary_coefficients[j] = 0.0;
                         }
 
                         HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
 
-                        delete boundary_coefficients;
+                        delete [] boundary_coefficients;
                     }
                     break;
                 case 1: 
@@ -280,13 +298,13 @@ void HypreLeaf::solve(
 
                         double* boundary_coefficients = new double[ny];
 
-                        for(i = 0; i < ny; i++) {
-                            boundary_coefficients[i] = 0.0;
+                        for(int j = 0; j < ny; j++) {
+                            boundary_coefficients[j] = 0.0;
                         }
 
                         HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
 
-                        delete boundary_coefficients;
+                        delete [] boundary_coefficients;
                     }
                     break;
                 case 2: 
@@ -300,13 +318,13 @@ void HypreLeaf::solve(
 
                         double* boundary_coefficients = new double[nx];
 
-                        for(i = 0; i < nx; i++) {
-                            boundary_coefficients[i] = 0.0;
+                        for(int j = 0; j < nx; j++) {
+                            boundary_coefficients[j] = 0.0;
                         }
 
                         HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
 
-                        delete boundary_coefficients;
+                        delete [] boundary_coefficients;
                     }
                     break;
                 case 3:
@@ -320,13 +338,13 @@ void HypreLeaf::solve(
 
                         double* boundary_coefficients = new double[nx];
 
-                        for(i = 0; i < nx; i++) {
-                            boundary_coefficients[i] = 0.0;
+                        for(int j = 0; j < nx; j++) {
+                            boundary_coefficients[j] = 0.0;
                         }
 
                         HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
 
-                        delete boundary_coefficients;
+                        delete [] boundary_coefficients;
                     }
                     break;
             }
@@ -339,6 +357,7 @@ void HypreLeaf::solve(
     iupper[1] = top;
 
     HYPRE_StructMatrixAssemble(A);
+    HYPRE_StructMatrixPrint("A", A, 0);
 
     HYPRE_StructVectorInitialize(b);
     HYPRE_StructVectorInitialize(x);
@@ -359,17 +378,20 @@ void HypreLeaf::solve(
 
             values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
 
-            if(i == global_xmin) {
-                values[n] += rx*c2*u0[ARRAY2D(i-1,j,xmn,ymn,nx)];
-            } else if(i == global_xmax) {
-                values[n] += rx*c3*u0[ARRAY2D(i+1,j,xmn,ymn,nx)];
-            }
+//            if(i == global_xmin) {
+//                values[n] += rx*c2*u0[ARRAY2D(i-1,j,xmn,ymn,nx)];
+//            } 
+//            if(i == global_xmax) {
+//                values[n] += rx*c3*u0[ARRAY2D(i+1,j,xmn,ymn,nx)];
+//            }
+//
+//            if (j == global_ymin) {
+//                values[n] += ry*c4*u0[ARRAY2D(i,j-1,xmn,ymn,nx)];
+//            } 
+//            if (j == global_ymax) {
+//                values[n] += ry*c5*u0[ARRAY2D(i,j+1,xmn,ymn,nx)];
+//            }
 
-            if (j == global_ymin) {
-                values[n] += ry*c4*u0[ARRAY2D(i,j-1,xmn,ymn,nx)];
-            } else if (j == global_ymax) {
-                values[n] += ry*c5*u0[ARRAY2D(i,j+1,xmn,ymn,nx)];
-            }
             n++;
         }
     }
@@ -388,10 +410,13 @@ void HypreLeaf::solve(
     HYPRE_StructVectorSetBoxValues(x, ilower, iupper, values);
 
     HYPRE_StructVectorAssemble(b);
+    HYPRE_StructVectorPrint("b", b, 0);
     HYPRE_StructVectorAssemble(x);
-        
+
     HYPRE_StructJacobiSetup(solver, A, b, x);
     HYPRE_StructJacobiSolve(solver, A, b, x);
+
+    HYPRE_StructVectorPrint("x", x, 0);
 
     int iters = 0;
     HYPRE_StructJacobiGetNumIterations(solver, &iters);
