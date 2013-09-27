@@ -98,6 +98,7 @@ FLAGS=$(FLAGS_$(COMPILER)) $(OMP) $(I3E) $(OPTIONS) -lm -lstdc++
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -I$(HYPRE_DIR)/include -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
+CXX_MPI_COMPILER=mpicxx
 
 clover_leaf: c_lover hypre_leaf *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
