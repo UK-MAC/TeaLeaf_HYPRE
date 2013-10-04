@@ -100,7 +100,7 @@ MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 CXX_MPI_COMPILER=mpicxx
 
-clover_leaf: c_lover hypre_leaf *.f90 Makefile
+tea_leaf: c_lover hypre_leaf *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
 	data.f90			\
 	definitions.f90			\
@@ -161,7 +161,7 @@ clover_leaf: c_lover hypre_leaf *.f90 Makefile
 	tea_leaf_kernel_c.o             \
 	HypreLeaf.o                     \
 	$(HYPRE_DIR)/lib/libHYPRE.a     \
-	-o clover_leaf; echo $(MESSAGE)
+	-o tea_leaf; echo $(MESSAGE)
 
 c_lover: *.c Makefile
 	$(C_MPI_COMPILER) $(CFLAGS)     \
@@ -181,4 +181,4 @@ hypre_leaf: *.C
 
 
 clean:
-	rm -f *.o *.mod *genmod* clover_leaf
+	rm -f *.o *.mod *genmod* tea_leaf
