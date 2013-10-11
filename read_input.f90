@@ -44,6 +44,7 @@ SUBROUTINE read_input()
   use_TeaLeaf=.FALSE.
   use_HYPRE_kernels=.FALSE.
   max_iters = 1000
+  solver_type = 0;
   eps = 10e-8
   use_Hydro = .TRUE.
   coefficient = CONDUCTIVITY
@@ -148,6 +149,8 @@ SUBROUTINE read_input()
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
         eps = parse_getrval(parse_getword(.TRUE.))
+      CASE('tl_solver_type')
+        solver_type = parse_getival(parse_getword(.TRUE.))
       CASE('no_hydro')
         use_Hydro = .FALSE.
       CASE('tl_coefficient')

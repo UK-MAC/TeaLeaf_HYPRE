@@ -75,7 +75,8 @@ SUBROUTINE start
               chunks(c)%field%bottom,             &
               chunks(c)%field%top,                &
               eps,                                &
-              max_iters)
+              max_iters,                          &
+              solver_type)
       ENDIF
     ENDDO
   ENDIF

@@ -12,7 +12,8 @@ extern "C" {
             int* bttm,
             int* tp,
             double* eps,
-            int* mx_itrs);
+            int* mx_itrs,
+            int* slvr_tp);
 
     void teardown_hypre_();
 
@@ -43,7 +44,8 @@ void setup_hypre_(
         int* bttm,
         int* tp,
         double* eps,
-        int* mx_itrs)
+        int* mx_itrs,
+        int* slvr_tp)
 {
     int left = *lft;
     int right = *rght;
@@ -52,8 +54,9 @@ void setup_hypre_(
 
     double epsilon = *eps;
     int max_iters = *mx_itrs;
+    int solver_type = *slvr_tp;
 
-    HypreLeaf::init(left,right,bottom,top,epsilon,max_iters);
+    HypreLeaf::init(left,right,bottom,top,epsilon,max_iters,solver_type);
 }
 
 void teardown_hypre_()
@@ -125,6 +128,7 @@ HYPRE_StructVector HypreLeaf::x;
 HYPRE_StructSolver HypreLeaf::solver;
 double* HypreLeaf::coefficients;
 double* HypreLeaf::values;
+int HypreLeaf::d_solver_type;
 
 void HypreLeaf::init(
         int left,
@@ -132,8 +136,10 @@ void HypreLeaf::init(
         int bottom,
         int top,
         double eps,
-        int max_iters)
+        int max_iters,
+        int solver_type)
 {
+    d_solver_type = solver_type;
 
     HYPRE_StructGridCreate(MPI_COMM_WORLD, 2, &grid);
 
@@ -163,9 +169,16 @@ void HypreLeaf::init(
     HYPRE_StructVectorCreate(MPI_COMM_WORLD, grid, &b);
     HYPRE_StructVectorCreate(MPI_COMM_WORLD, grid, &x);
 
-    HYPRE_StructJacobiCreate(MPI_COMM_WORLD, &solver);
-    HYPRE_StructJacobiSetTol(solver, eps);
-    HYPRE_StructJacobiSetMaxIter(solver, max_iters);
+    if(d_solver_type == SOLVER_TYPE_JACOBI) {
+        std::cout << "Using JACOBI Solver" << std::endl;
+        HYPRE_StructJacobiCreate(MPI_COMM_WORLD, &solver);
+        HYPRE_StructJacobiSetTol(solver, eps);
+        HYPRE_StructJacobiSetMaxIter(solver, max_iters);
+    } else {
+        HYPRE_StructPCGCreate(MPI_COMM_WORLD, &solver);
+        HYPRE_StructPCGSetTol(solver, eps);
+        HYPRE_StructPCGSetMaxIter(solver, max_iters);
+    }
 
     int nx = right - left + 1;
     int ny = top - bottom + 1;
@@ -180,7 +193,13 @@ void HypreLeaf::finalise()
     HYPRE_StructMatrixDestroy(A);
     HYPRE_StructVectorDestroy(b);
     HYPRE_StructVectorDestroy(x);
-    HYPRE_StructJacobiDestroy(solver);
+
+    if(d_solver_type == SOLVER_TYPE_JACOBI) {
+        HYPRE_StructJacobiDestroy(solver);
+    } else {
+        HYPRE_StructPCGDestroy(solver);
+    }
+
     delete coefficients;
 }
 
@@ -413,13 +432,22 @@ void HypreLeaf::solve(
     HYPRE_StructVectorPrint("b", b, 0);
     HYPRE_StructVectorAssemble(x);
 
-    HYPRE_StructJacobiSetup(solver, A, b, x);
-    HYPRE_StructJacobiSolve(solver, A, b, x);
+    if(SOLVER_TYPE_JACOBI == d_solver_type) {
+        HYPRE_StructJacobiSetup(solver, A, b, x);
+        HYPRE_StructJacobiSolve(solver, A, b, x);
+    } else {
+        HYPRE_StructPCGSetup(solver, A, b, x);
+        HYPRE_StructPCGSolve(solver, A, b, x);
+    }
 
     HYPRE_StructVectorPrint("x", x, 0);
 
     int iters = 0;
-    HYPRE_StructJacobiGetNumIterations(solver, &iters);
+    if (SOLVER_TYPE_JACOBI == d_solver_type) {
+        HYPRE_StructJacobiGetNumIterations(solver, &iters);
+    } else {
+        HYPRE_StructPCGGetNumIterations(solver, &iters);
+    }
 
     HYPRE_StructVectorGetBoxValues(x, ilower, iupper, values);
 
