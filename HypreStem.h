@@ -3,10 +3,12 @@
 
 #include "HYPRE_struct_ls.h"
 
-class HypreLeaf {
+#define SOLVER_TYPE_JACOBI 1
+
+class HypreStem {
     public:
-        HypreLeaf();
-        virtual ~HypreLeaf();
+        HypreStem();
+        virtual ~HypreStem();
 
         static void init(
                 int left,
@@ -14,7 +16,8 @@ class HypreLeaf {
                 int bottom,
                 int top,
                 double eps,
-                int max_iters);
+                int max_iters,
+                int solver_type);
 
         static void finalise();
 
@@ -44,9 +47,11 @@ class HypreLeaf {
         static HYPRE_StructVector b;
         static HYPRE_StructVector x;
         static HYPRE_StructSolver solver;
+        static HYPRE_StructSolver preconditioner;
 
         static double* coefficients;
         static double* values;
+        static int d_solver_type;
     private:
 };
 #endif

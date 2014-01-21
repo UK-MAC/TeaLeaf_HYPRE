@@ -156,7 +156,7 @@ SUBROUTINE tea_leaf()
 
       fields=0
       fields(FIELD_ENERGY1) = 1
-      CALL update_halo(fields,1)
+      CALL update_halo(fields,2)
 
     ENDIF
 

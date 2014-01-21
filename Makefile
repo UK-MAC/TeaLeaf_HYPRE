@@ -159,7 +159,7 @@ tea_leaf: c_lover hypre_leaf *.f90 Makefile
 	advec_mom_kernel_c.o            \
 	advec_cell_kernel_c.o           \
 	tea_leaf_kernel_c.o             \
-	HypreLeaf.o                     \
+	HypreStem.o                     \
 	$(HYPRE_DIR)/lib/libHYPRE.a     \
 	-o tea_leaf; echo $(MESSAGE)
 
@@ -177,7 +177,7 @@ c_lover: *.c Makefile
 	tea_leaf_kernel_c.c
 
 hypre_leaf: *.C
-	$(CXX_MPI_COMPILER) $(CFLAGS) HypreLeaf.C
+	$(CXX_MPI_COMPILER) $(CFLAGS) HypreStem.C
 
 
 clean:

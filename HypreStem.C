@@ -1,4 +1,4 @@
-#include "HypreLeaf.h"
+#include "HypreStem.h"
 
 #include <iostream>
 
@@ -56,12 +56,12 @@ void setup_hypre_(
     int max_iters = *mx_itrs;
     int solver_type = *slvr_tp;
 
-    HypreLeaf::init(left,right,bottom,top,epsilon,max_iters,solver_type);
+    HypreStem::init(left,right,bottom,top,epsilon,max_iters,solver_type);
 }
 
 void teardown_hypre_()
 {
-    HypreLeaf::finalise();
+    HypreStem::finalise();
 }
 
 void hypre_solve_(
@@ -99,7 +99,7 @@ void hypre_solve_(
     double rx = *rxp;
     double ry = *ryp;
 
-    HypreLeaf::solve(
+    HypreStem::solve(
             left,
             right,
             bottom,
@@ -120,17 +120,18 @@ void hypre_solve_(
             neighbours);
 }
 
-HYPRE_StructGrid HypreLeaf::grid;
-HYPRE_StructStencil HypreLeaf::stencil;
-HYPRE_StructMatrix HypreLeaf::A;
-HYPRE_StructVector HypreLeaf::b;
-HYPRE_StructVector HypreLeaf::x;
-HYPRE_StructSolver HypreLeaf::solver;
-double* HypreLeaf::coefficients;
-double* HypreLeaf::values;
-int HypreLeaf::d_solver_type;
+HYPRE_StructGrid HypreStem::grid;
+HYPRE_StructStencil HypreStem::stencil;
+HYPRE_StructMatrix HypreStem::A;
+HYPRE_StructVector HypreStem::b;
+HYPRE_StructVector HypreStem::x;
+HYPRE_StructSolver HypreStem::solver;
+HYPRE_StructSolver HypreStem::preconditioner;
+double* HypreStem::coefficients;
+double* HypreStem::values;
+int HypreStem::d_solver_type;
 
-void HypreLeaf::init(
+void HypreStem::init(
         int left,
         int right,
         int bottom,
@@ -178,7 +179,13 @@ void HypreLeaf::init(
         HYPRE_StructPCGCreate(MPI_COMM_WORLD, &solver);
         HYPRE_StructPCGSetTol(solver, eps);
         HYPRE_StructPCGSetMaxIter(solver, max_iters);
+        HYPRE_StructPCGSetPrecond(solver,
+            HYPRE_StructDiagScale,
+            HYPRE_StructDiagScaleSetup,
+            preconditioner);
     }
+
+
 
     int nx = right - left + 1;
     int ny = top - bottom + 1;
@@ -188,7 +195,7 @@ void HypreLeaf::init(
     values = new double[nvalues];
 }
 
-void HypreLeaf::finalise()
+void HypreStem::finalise()
 {
     HYPRE_StructMatrixDestroy(A);
     HYPRE_StructVectorDestroy(b);
@@ -203,7 +210,7 @@ void HypreLeaf::finalise()
     delete coefficients;
 }
 
-void HypreLeaf::solve(
+void HypreStem::solve(
         int left,
         int right,
         int bottom,
