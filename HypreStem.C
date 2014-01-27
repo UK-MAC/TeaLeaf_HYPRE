@@ -262,7 +262,7 @@ void HypreStem::solve(
             double c4 = Ky[ARRAY2D(j,k,left-2,bottom-2,nx)];
             double c5 = Ky[ARRAY2D(j,k+1,left-2,bottom-2,nx)];
 
-            coefficients[n] = (1.0+(2.0*rx)+(2.0*ry));
+            coefficients[n] = (1.0+(2.0*(0.5*(c2+c3))*rx)+(2.0*(0.5*(c4+c5))*ry));
             coefficients[n+1] = (-1*rx)*c2;
             coefficients[n+2] = (-1*rx)*c3;
             coefficients[n+3] = (-1*ry)*c4;
