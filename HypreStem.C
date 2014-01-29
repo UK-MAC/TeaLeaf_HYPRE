@@ -263,23 +263,23 @@ void HypreStem::solve(
             double c5 = Ky[ARRAY2D(j,k+1,left-2,bottom-2,nx)];
 
             coefficients[n] = (1.0+(2.0*(0.5*(c2+c3))*rx)+(2.0*(0.5*(c4+c5))*ry));
-            coefficients[n+1] = (-1*rx)*c2;
-            coefficients[n+2] = (-1*rx)*c3;
-            coefficients[n+3] = (-1*ry)*c4;
-            coefficients[n+4] = (-1*ry)*c5;
+            coefficients[n+1] = (-1.0*rx)*c2;
+            coefficients[n+2] = (-1.0*rx)*c3;
+            coefficients[n+3] = (-1.0*ry)*c4;
+            coefficients[n+4] = (-1.0*ry)*c5;
 
             if(j == global_xmin) {
-                coefficients[n+2] = (-2*rx)*c3;
+                coefficients[n+2] = (-2.0*rx)*c3;
             } 
             if(j == global_xmax) {
-                coefficients[n+1] = (-2*rx)*c2;
+                coefficients[n+1] = (-2.0*rx)*c2;
             }
 
             if (k == global_ymin) {
-                coefficients[n+4] = (-2*ry)*c5;
+                coefficients[n+4] = (-2.0*ry)*c5;
             } 
             if (k == global_ymax) {
-                coefficients[n+3] = (-2*ry)*c4;
+                coefficients[n+3] = (-2.0*ry)*c4;
             }
 
 
