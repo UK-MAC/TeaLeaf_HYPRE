@@ -14,6 +14,8 @@ This version of TeaLeaf requires HYPRE. We use version 2.9.0b.
 
 ## TeaLeaf
 
+## Compling
+
 - If you didn't install HYPRE to `libs/hypre' edit the TeaLeaf `Makefile` and specify the directory that you have installed HYPRE in.
 - In many case just typing `make` in the required software version will work. 
 
