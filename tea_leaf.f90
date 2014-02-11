@@ -1,167 +1,76 @@
-MODULE tea_leaf_module
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+! details.
+!
+! You should have received a copy of the GNU General Public License along with
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
-CONTAINS
+!>  @brief TeaLeaf top level program: Invokes the main cycle
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @details TeaLeaf in a proxy-app that solves the linear heat conduction
+!>  equations using an implicit finite volume method on a Cartesian grid.
+!>  The grid is staggered with internal energy, density, temperature and pressure at cell
+!>  centres and velocities on cell vertices.
+!>
+!>  The CloverLeaf hydrodynamics can also be invoked to produce a coupled conduction/advection system
+!>
+!>  It can be run in distributed mode using MPI.
+!>
+!>  It can use OpenMP, OpenACC on a compute device.
+!>
+!>  NOTE: that the proxy-app uses uniformly spaced mesh. The actual method will
+!>  work on a mesh with varying spacing to keep it relevant to it's parent code.
+!>  For this reason, optimisations should only be carried out on the software
+!>  that do not change the underlying numerical method. For example, the
+!>  volume, though constant for all cells, should remain array and not be
+!>  converted to a scalar.
+PROGRAM tea_leaf
 
-SUBROUTINE tea_leaf()
- 
   USE clover_module
-  USE tea_leaf_kernel_module
-  USE update_halo_module
 
   IMPLICIT NONE
 
-  INTEGER :: c, n, j,k
-  REAL(KIND=8) :: ry,rx, error
+!$ INTEGER :: OMP_GET_NUM_THREADS,OMP_GET_THREAD_NUM
 
-  INTEGER :: fields(NUM_FIELDS)
+  CALL clover_init_comms()
 
-  DO c=1,number_of_chunks
+!$OMP PARALLEL
+  IF(parallel%boss)THEN
+!$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+      WRITE(*,*)
+      WRITE(*,'(a15,f8.3)') 'Tea Version ',g_version
+      WRITE(*,'(a18)') 'MPI Version'
+!$    WRITE(*,'(a18)') 'OpenMP Version'
+      WRITE(*,'(a14,i6)') 'Task Count ',parallel%max_task !MPI
+!$    WRITE(*,'(a15,i5)') 'Thread Count: ',OMP_GET_NUM_THREADS()
+      WRITE(*,*)
+      WRITE(0,*)
+      WRITE(0,'(a15,f8.3)') 'Tea Version ',g_version
+      WRITE(0,'(a18)') 'MPI Version'
+!$    WRITE(0,'(a18)') 'OpenMP Version'
+      WRITE(0,'(a14,i6)') 'Task Count ',parallel%max_task !MPI
+!$    WRITE(0,'(a15,i5)') 'Thread Count: ',OMP_GET_NUM_THREADS()
+      WRITE(0,*)
+!$  ENDIF
+  ENDIF
+!$OMP END PARALLEL
 
-    IF(chunks(c)%task.EQ.parallel%task) THEN
+  CALL initialise
 
-      fields=0
-      fields(FIELD_ENERGY1) = 1
-      fields(FIELD_DENSITY1) = 1
-      CALL update_halo(fields,2)
+  CALL hydro
+  
+  ! Deallocate everything
+  
+END PROGRAM tea_leaf
+>>>>>>> reference/master
 
-      ! INIT - set up coefficients based on material temperature
-      IF(use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%celldx,                      &
-              chunks(c)%field%celldy,                      &
-              chunks(c)%field%volume,                      &
-              chunks(c)%field%density1,                    &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%work_array1,                 &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array3,                 &
-              chunks(c)%field%work_array4,                 &
-              chunks(c)%field%work_array5,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
-              coefficient)
-      ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_init_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%celldx,                      &
-              chunks(c)%field%celldy,                      &
-              chunks(c)%field%volume,                      &
-              chunks(c)%field%density1,                    &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%work_array1,                 &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array3,                 &
-              chunks(c)%field%work_array4,                 &
-              chunks(c)%field%work_array5,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
-              coefficient)
-      ENDIF
-
-
-      ! JACOBI
-
-      rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2);
-      ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2);
-
-      IF(.NOT. use_HYPRE_kernels) THEN
-        DO n=1,max_iters
-
-          IF(use_fortran_kernels) THEN
-              CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
-                  chunks(c)%field%x_max,                       &
-                  chunks(c)%field%y_min,                       &
-                  chunks(c)%field%y_max,                       &
-                  rx,                                          &
-                  ry,                                          &
-                  chunks(c)%field%work_array6,                 &
-                  chunks(c)%field%work_array7,                 &
-                  error,                                       &
-                  chunks(c)%field%work_array1,                 &
-                  chunks(c)%field%u,                           &
-                  chunks(c)%field%work_array2)
-          ELSEIF(use_C_kernels) THEN
-              CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
-                  chunks(c)%field%x_max,                       &
-                  chunks(c)%field%y_min,                       &
-                  chunks(c)%field%y_max,                       &
-                  rx,                                          &
-                  ry,                                          &
-                  chunks(c)%field%work_array6,                 &
-                  chunks(c)%field%work_array7,                 &
-                  error,                                       &
-                  chunks(c)%field%work_array1,                 &
-                  chunks(c)%field%u,                           &
-                  chunks(c)%field%work_array2)
-          ENDIF
-
-          ! CALL update_halo
-          fields=0
-          fields(FIELD_U) = 1
-          CALL update_halo(fields,2)
-
-          CALL clover_max(error)
-
-          IF (error .LT. eps) EXIT
-
-        ENDDO
-      ELSE
-        ! HYPRE STUFF HERE
-        CALL hypre_solve(                                      &
-              chunks(c)%field%left,                            &
-              chunks(c)%field%right,                           &
-              chunks(c)%field%bottom,                          &
-              chunks(c)%field%top,                             &
-              chunks(c)%field%x_min,                           &
-              chunks(c)%field%x_max,                           &
-              chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max,                           &
-              1,                                               &
-              grid%x_cells,                                    &
-              1,                                               &
-              grid%y_cells,                                    &
-              rx,                                              &
-              ry,                                              &
-              chunks(c)%field%work_array6,                     &
-              chunks(c)%field%work_array7,                     &
-              chunks(c)%field%u,                               &
-              chunks(c)%chunk_neighbours)
-      ENDIF
-
-      ! RESET
-      IF(use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_finalise(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                           &
-              chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max,                           &
-              chunks(c)%field%energy1,                         &
-              chunks(c)%field%density1,                        &
-              chunks(c)%field%u)
-      ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_finalise_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                           &
-              chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max,                           &
-              chunks(c)%field%energy1,                         &
-              chunks(c)%field%density1,                        &
-              chunks(c)%field%u)
-      ENDIF
-
-      fields=0
-      fields(FIELD_ENERGY1) = 1
-      CALL update_halo(fields,2)
-
-    ENDIF
-
-  ENDDO
-
-END SUBROUTINE tea_leaf
-
-END MODULE tea_leaf_module
