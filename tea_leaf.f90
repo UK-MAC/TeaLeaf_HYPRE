@@ -72,5 +72,4 @@ PROGRAM tea_leaf
   ! Deallocate everything
   
 END PROGRAM tea_leaf
->>>>>>> reference/master
 
