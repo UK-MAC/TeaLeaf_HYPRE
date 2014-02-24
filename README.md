@@ -19,6 +19,7 @@ This version of TeaLeaf requires HYPRE. We use version 2.9.0b.
 
 - If you didn't install HYPRE to `libs/hypre-2.9.0b' edit the TeaLeaf `Makefile` and specify the directory that you have installed HYPRE in.
 - In many case just typing `make` in the required software version will work. 
+- Sometimes the hypre library will be in libs/hypre-2.9.0b/lib and sometimes libs/hypre-2.9.0b/lib64, depending the local system.
 
 If the MPI compilers have different names then the build process needs to 
 notified of this by defining two environment variables, `MPI_COMPILER` and 
