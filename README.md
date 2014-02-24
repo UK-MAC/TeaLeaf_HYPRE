@@ -8,7 +8,8 @@ This version of TeaLeaf requires HYPRE. We use version 2.9.0b.
 - Inside the HYPRE `src` directory, use configure to set up the install location.
   - If you are only building HYPRE for TeaLeaf, consider installing it in the `libs/hypre-2.9.0b` folder in the TeaLeaf_HYPRE directory
   - Other options can also be set using the `configure` command. Use `./configure --help` to see them all.
-  - For example: `CC=mpiicc CXX=mpiicpc F77=mpiifort ./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.9.0b`.
+  - If default compiler names are used such as mpif90, then this should work `./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.9.0b`
+  - To specify compilers, this is an example: `CC=mpiicc CXX=mpiicpc F77=mpiifort ./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.9.0b`
 - We recommend that you use the same compilers for building both HYPRE and TeaLeaf.
 - Once HYPRE is configured, use `make` and then `make install` to install HYPRE.
 
