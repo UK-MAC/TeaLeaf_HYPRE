@@ -6,9 +6,9 @@ This version of TeaLeaf requires HYPRE. We use version 2.9.0b.
   - Babel interfaces are _not_ required.
 - Extract the files.
 - Inside the HYPRE `src` directory, use configure to set up the install location.
-  - If you are only building HYPRE for TeaLeaf, consider installing it in the `libs/hypre` folder in the TeaLeaf directory
+  - If you are only building HYPRE for TeaLeaf, consider installing it in the `libs/hypre-2.9.0b` folder in the TeaLeaf_HYPRE directory
   - Other options can also be set using the `configure` command. Use `./configure --help` to see them all.
-  - For example: `CC=mpiicc CXX=mpiicpc F77=mpiifort ./configure --prefix=$HOME/TeaLeaf/libs/hypre`.
+  - For example: `CC=mpiicc CXX=mpiicpc F77=mpiifort ./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.9.0b`.
 - We recommend that you use the same compilers for building both HYPRE and TeaLeaf.
 - Once HYPRE is configured, use `make` and then `make install` to install HYPRE.
 
@@ -16,7 +16,7 @@ This version of TeaLeaf requires HYPRE. We use version 2.9.0b.
 
 ## Compling
 
-- If you didn't install HYPRE to `libs/hypre' edit the TeaLeaf `Makefile` and specify the directory that you have installed HYPRE in.
+- If you didn't install HYPRE to `libs/hypre-2.9.0b' edit the TeaLeaf `Makefile` and specify the directory that you have installed HYPRE in.
 - In many case just typing `make` in the required software version will work. 
 
 If the MPI compilers have different names then the build process needs to 
