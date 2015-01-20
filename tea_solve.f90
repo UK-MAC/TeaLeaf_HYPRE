@@ -533,8 +533,8 @@ SUBROUTINE tea_leaf()
                          grid%y_cells,               &
                          rx,                         &
                          ry,                         &
-                         chunks(c)%field%work_array6,&
-                         chunks(c)%field%work_array7,&
+                         chunks(c)%field%vector_Kx,  &
+                         chunks(c)%field%vector_Ky,  &
                          chunks(c)%field%u,          &
                          chunks(c)%chunk_neighbours)
       ENDIF
