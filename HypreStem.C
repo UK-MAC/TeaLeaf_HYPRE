@@ -30,6 +30,7 @@ extern "C" {
             int* globalxmax,
             int* globalymin,
             int* globalymax,
+            int* print_info,
             double* rx,
             double* ry,
             double* Kx,
@@ -77,6 +78,7 @@ void hypre_solve_(
         int* globalxmax,
         int* globalymin,
         int* globalymax,
+        int* print_info,
         double* rxp,
         double* ryp,
         double* Kx,
@@ -96,9 +98,11 @@ void hypre_solve_(
     int global_xmax = *globalxmax;
     int global_ymin = *globalymin;
     int global_ymax = *globalymax;
+    int info = *print_info;
     double rx = *rxp;
     double ry = *ryp;
 
+    
     HypreStem::solve(
             left,
             right,
@@ -112,6 +116,7 @@ void hypre_solve_(
             global_xmax,
             global_ymin,
             global_ymax,
+            info,
             rx,
             ry,
             Kx,
@@ -171,11 +176,63 @@ void HypreStem::init(
     HYPRE_StructVectorCreate(MPI_COMM_WORLD, grid, &x);
 
     if(d_solver_type == SOLVER_TYPE_JACOBI) {
-        std::cout << "Using JACOBI Solver" << std::endl;
+        //std::cout << "Using JACOBI Solver" << std::endl;
         HYPRE_StructJacobiCreate(MPI_COMM_WORLD, &solver);
         HYPRE_StructJacobiSetTol(solver, eps);
         HYPRE_StructJacobiSetMaxIter(solver, max_iters);
-    } else {
+    } 
+    else if ( d_solver_type == SOLVER_TYPE_PFMG ){
+        HYPRE_StructPCGCreate(MPI_COMM_WORLD, &solver);
+        /* Create the Struct PFMG solver for use as a preconditioner */
+        HYPRE_StructPFMGCreate(MPI_COMM_WORLD, &preconditioner);
+      	
+        /* Set PFMG parameters */
+        HYPRE_StructPFMGSetMaxIter(preconditioner, 1);
+        HYPRE_StructPFMGSetTol(preconditioner, 0.0);
+        HYPRE_StructPFMGSetZeroGuess(preconditioner);
+        HYPRE_StructPFMGSetNumPreRelax(preconditioner, 1);
+        HYPRE_StructPFMGSetNumPostRelax(preconditioner, 1);
+      
+        /* non-Galerkin coarse grid  */
+        HYPRE_StructPFMGSetRAPType(preconditioner, 1);
+      
+        /* Red/Black Gauss-Seidel (symmetric: RB pre and post-relaxation) */
+         HYPRE_StructPFMGSetRelaxType(preconditioner, 3);
+
+        /* skip relaxation on some levels (more efficient for this problem) */
+        HYPRE_StructPFMGSetSkipRelax(preconditioner, 1);
+
+        HYPRE_StructPCGSetTol(solver, eps);
+        HYPRE_StructPCGSetMaxIter(solver, max_iters);
+
+        HYPRE_StructPCGSetPrecond(solver,
+            HYPRE_StructPFMGSolve,
+            HYPRE_StructPFMGSetup,
+            preconditioner); 
+    }
+    else if  ( d_solver_type == SOLVER_TYPE_SMG ){
+        HYPRE_StructPCGCreate(MPI_COMM_WORLD, &solver);
+
+        /* Create the SMG as a preconditioner */
+        HYPRE_StructSMGCreate(MPI_COMM_WORLD, &preconditioner);
+        HYPRE_StructSMGSetMemoryUse(preconditioner, 0);
+        HYPRE_StructSMGSetMaxIter(preconditioner, 1);
+        HYPRE_StructSMGSetTol(preconditioner, 0.0);
+        HYPRE_StructSMGSetZeroGuess(preconditioner);
+
+        HYPRE_StructSMGSetNumPreRelax(preconditioner, 1);
+        HYPRE_StructSMGSetNumPostRelax(preconditioner, 1);
+
+        HYPRE_StructPCGSetTol(solver, eps);
+        HYPRE_StructPCGSetMaxIter(solver, max_iters);
+        HYPRE_StructPCGSetPrecond(solver,
+                      HYPRE_StructSMGSolve,
+                      HYPRE_StructSMGSetup,
+                      preconditioner);
+
+    }
+    else {
+        /* use diagonal scaling as preconditioner */
         HYPRE_StructPCGCreate(MPI_COMM_WORLD, &solver);
         HYPRE_StructPCGSetTol(solver, eps);
         HYPRE_StructPCGSetMaxIter(solver, max_iters);
@@ -184,8 +241,6 @@ void HypreStem::init(
             HYPRE_StructDiagScaleSetup,
             preconditioner);
     }
-
-
 
     int nx = right - left + 1;
     int ny = top - bottom + 1;
@@ -203,7 +258,16 @@ void HypreStem::finalise()
 
     if(d_solver_type == SOLVER_TYPE_JACOBI) {
         HYPRE_StructJacobiDestroy(solver);
-    } else {
+    }
+    else if  ( d_solver_type == SOLVER_TYPE_PFMG ){
+        HYPRE_StructPCGDestroy(solver);
+        HYPRE_StructPFMGDestroy(preconditioner);
+    }
+    else if  ( d_solver_type == SOLVER_TYPE_SMG ){
+        HYPRE_StructPCGDestroy(solver);
+        HYPRE_StructSMGDestroy(preconditioner);
+    }
+    else {
         HYPRE_StructPCGDestroy(solver);
     }
 
@@ -223,6 +287,7 @@ void HypreStem::solve(
         int global_xmax,
         int global_ymin,
         int global_ymax,
+        int  info,
         double rx,
         double ry,
         double* Kx,
@@ -239,14 +304,13 @@ void HypreStem::solve(
     iupper[0] = right;
     iupper[1] = top;
 
-    int nx = (x_max - x_min + 1) + 5;
-    int ny = (y_max - y_min + 1) + 5;
+    int nx = (x_max - x_min + 1) + 4;
+    int ny = (y_max - y_min + 1) + 4;
 
     int nentries = 5;
     int stencil_indices[5] = {0,1,2,3,4};
 
     int n = 0;
-    //for(int i = 0; i < nvalues; i += nentries) {
     for(int k = bottom; k <= top; k++) {
         for(int j = left; j <= right; j++) {
 
@@ -262,31 +326,32 @@ void HypreStem::solve(
             double c4 = Ky[ARRAY2D(j,k,left-2,bottom-2,nx)];
             double c5 = Ky[ARRAY2D(j,k+1,left-2,bottom-2,nx)];
 
-            coefficients[n] = (1.0+(2.0*(0.5*(c2+c3))*rx)+(2.0*(0.5*(c4+c5))*ry));
+            //coefficients[n] = (1.0+(2.0*(0.5*(c2+c3))*rx)+(2.0*(0.5*(c4+c5))*ry));
             coefficients[n+1] = (-1.0*rx)*c2;
             coefficients[n+2] = (-1.0*rx)*c3;
             coefficients[n+3] = (-1.0*ry)*c4;
             coefficients[n+4] = (-1.0*ry)*c5;
 
             if(j == global_xmin) {
-                coefficients[n+2] = (-2.0*rx)*c3;
-            } 
-            if(j == global_xmax) {
-                coefficients[n+1] = (-2.0*rx)*c2;
+                coefficients[n+1] = 0;
             }
+
+            if(j == global_xmax) {
+                coefficients[n+2] = 0;
+            } 
 
             if (k == global_ymin) {
-                coefficients[n+4] = (-2.0*ry)*c5;
-            } 
-            if (k == global_ymax) {
-                coefficients[n+3] = (-2.0*ry)*c4;
+                coefficients[n+3] = 0;
             }
 
+            if (k == global_ymax) {
+                coefficients[n+4] = 0;
+            }
 
+            coefficients[n] = 1.0-coefficients[n+1]-coefficients[n+2]-coefficients[n+3]-coefficients[n+4];
             n += nentries;
         }
     }
-    //}
 
     HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, nentries, stencil_indices, coefficients);
 
@@ -383,11 +448,11 @@ void HypreStem::solve(
     iupper[1] = top;
 
     HYPRE_StructMatrixAssemble(A);
-    HYPRE_StructMatrixPrint("A", A, 0);
-
+    if(info == 1) {
+       HYPRE_StructMatrixPrint("A", A, 0);
+    }
     HYPRE_StructVectorInitialize(b);
     HYPRE_StructVectorInitialize(x);
-
 
     int xmn = left-2;
     int ymn = bottom-2;
@@ -397,26 +462,12 @@ void HypreStem::solve(
 
     for (int j = bottom; j <= top; j++) {
         for (int i = left; i <= right; i++) {
-            double c2 = Kx[ARRAY2D(i,j,xmn,ymn,nx+1)];
-            double c3 = Kx[ARRAY2D(i+1,j,xmn,ymn,nx+1)];
-            double c4 = Ky[ARRAY2D(i,j,xmn,ymn,nx+1)];
-            double c5 = Ky[ARRAY2D(i,j+1,xmn,ymn,nx+1)];
+            double c2 = Kx[ARRAY2D(i,j,xmn,ymn,nx)];
+            double c3 = Kx[ARRAY2D(i+1,j,xmn,ymn,nx)];
+            double c4 = Ky[ARRAY2D(i,j,xmn,ymn,nx)];
+            double c5 = Ky[ARRAY2D(i,j+1,xmn,ymn,nx)];
 
             values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
-
-//            if(i == global_xmin) {
-//                values[n] += rx*c2*u0[ARRAY2D(i-1,j,xmn,ymn,nx)];
-//            } 
-//            if(i == global_xmax) {
-//                values[n] += rx*c3*u0[ARRAY2D(i+1,j,xmn,ymn,nx)];
-//            }
-//
-//            if (j == global_ymin) {
-//                values[n] += ry*c4*u0[ARRAY2D(i,j-1,xmn,ymn,nx)];
-//            } 
-//            if (j == global_ymax) {
-//                values[n] += ry*c5*u0[ARRAY2D(i,j+1,xmn,ymn,nx)];
-//            }
 
             n++;
         }
@@ -436,7 +487,9 @@ void HypreStem::solve(
     HYPRE_StructVectorSetBoxValues(x, ilower, iupper, values);
 
     HYPRE_StructVectorAssemble(b);
-    HYPRE_StructVectorPrint("b", b, 0);
+    if(info == 1) {
+       HYPRE_StructVectorPrint("b", b, 0);
+    }
     HYPRE_StructVectorAssemble(x);
 
     if(SOLVER_TYPE_JACOBI == d_solver_type) {
@@ -447,7 +500,9 @@ void HypreStem::solve(
         HYPRE_StructPCGSolve(solver, A, b, x);
     }
 
-    HYPRE_StructVectorPrint("x", x, 0);
+    if(info == 1) {
+      HYPRE_StructVectorPrint("x", x, 0);
+    }
 
     int iters = 0;
     if (SOLVER_TYPE_JACOBI == d_solver_type) {

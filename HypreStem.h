@@ -2,8 +2,15 @@
 #define HYPRE_LEAF_H_
 
 #include "HYPRE_struct_ls.h"
+#include "HYPRE_parcsr_ls.h"
+#include "HYPRE_krylov.h"
+#include "HYPRE_sstruct_ls.h"
 
 #define SOLVER_TYPE_JACOBI 1
+#define SOLVER_TYPE_PFMG   2
+#define SOLVER_TYPE_SMG    3
+#define SOLVER_TYPE_AMG    4
+
 
 class HypreStem {
     public:
@@ -34,6 +41,7 @@ class HypreStem {
                 int global_xmax,
                 int global_ymin,
                 int global_ymax,
+                int  info,
                 double rx,
                 double ry,
                 double* Kx,
@@ -48,6 +56,7 @@ class HypreStem {
         static HYPRE_StructVector x;
         static HYPRE_StructSolver solver;
         static HYPRE_StructSolver preconditioner;
+
 
         static double* coefficients;
         static double* values;

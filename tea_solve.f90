@@ -103,7 +103,7 @@ SUBROUTINE tea_leaf()
         ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
       ENDIF
 
-      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg .OR. use_PETSC_kernels) THEN
+      IF(tl_use_jacobi .OR. tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg .OR. use_hypre_kernels) THEN
         ! All 3 of these solvers use the CG kernels and this is also called for PETSc to get the initial residual
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
@@ -180,7 +180,7 @@ SUBROUTINE tea_leaf()
       IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
       IF (profiler_on) solve_time = timer()
 
-      IF(.NOT.use_PETSC_kernels) THEN
+      IF(.NOT.use_hypre_kernels) THEN
         DO itcount=1,max_iters
 
           iteration_time = timer()
@@ -491,34 +491,9 @@ SUBROUTINE tea_leaf()
 
       ENDIF
 
-      IF (use_PETSC_kernels) THEN
-        petsc_mod=1 ! Get get the iteration print consistent
-        ! Substitute for PETSc Solve
-
-        CALL setupMatA_petsc(1,rx,ry)
-        CALL setupRHS_petsc(1,rx,ry)
-        CALL setupSol_petsc(1,rx,ry)
-
-        IF(use_pgcg) THEN
-          CALL solve_petsc_pgcg(eps,max_iters,numit_cg,numit_cheby,error)  ! Use Paul Garrett's Approach
-          itcount=numit_cg+numit_cheby
-          IF(parallel%boss) WRITE(g_out,*) 'Achieved convergence in ', numit_cg ,' CG iterations and ', numit_cheby, &
-                                           ' Cheby Iterations'
-          IF(parallel%boss) WRITE(g_out,*) 'Current Total Iterations is : ',  total_cg_iter, ' CG Iterations and ', &
-                                           total_cheby_iter, ' Chebyshev Iterations'
-        ELSE 
-          CALL solve_petsc(numit,error)    ! Use Command Line Specified Approach
-          itcount=numit+1
-          IF(parallel%boss) WRITE(g_out,*) 'Achieved convergence in ', numit ,' iterations'
-          IF(parallel%boss) WRITE(g_out,*) 'Current Total Iterations: ',  total_petsc_iter
-        ENDIF
-   
-        CALL getSolution_petsc(1)
-
-      ENDIF
-
       IF (use_HYPRE_kernels) THEN
         ! HYPRE STUFF HERE
+        itcount=0
         CALL hypre_solve(chunks(c)%field%left,       &
                          chunks(c)%field%right,      &
                          chunks(c)%field%bottom,     &
@@ -531,6 +506,7 @@ SUBROUTINE tea_leaf()
                          grid%x_cells,               &
                          1,                          &
                          grid%y_cells,               &
+                         print_HYPRE_info,           &
                          rx,                         &
                          ry,                         &
                          chunks(c)%field%vector_Kx,  &

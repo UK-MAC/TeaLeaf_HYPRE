@@ -91,20 +91,16 @@ SUBROUTINE start
 
   CALL tea_barrier
 
-  ! Substitute for PETSc Setup Call
-  IF(use_PETSC_kernels) THEN
-    IF(parallel%boss) WRITE(g_out,*) ' Using PETSc'
-    CALL setup_petsc(eps,max_iters)
-  ENDIF
-
   IF(use_HYPRE_kernels)THEN
-    CALL setup_hypre(chunks(c)%field%left,  &
-                     chunks(c)%field%right, &
-                     chunks(c)%field%bottom,&
-                     chunks(c)%field%top,   &
-                     eps,                   &
-                     max_iters,             &
-                     solver_type)
+    DO c=1,chunks_per_task
+      CALL setup_hypre(chunks(c)%field%left,  &
+                       chunks(c)%field%right, &
+                       chunks(c)%field%bottom,&
+                       chunks(c)%field%top,   &
+                       eps,                   &
+                       max_iters,             &
+                       solver_type)
+    ENDDO
   ENDIF
 
   DO c=1,chunks_per_task

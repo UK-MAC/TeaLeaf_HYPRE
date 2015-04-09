@@ -72,6 +72,7 @@ MODULE definitions_module
    LOGICAL      :: verbose_on
    LOGICAL      :: use_PETSC_kernels
    LOGICAL      :: use_HYPRE_kernels
+   INTEGER      :: print_HYPRE_info
    LOGICAL      :: use_pgcg
    INTEGER      :: max_iters
    INTEGER      :: pgcg_cg_iter
@@ -80,6 +81,7 @@ MODULE definitions_module
    INTEGER      :: total_cheby_iter
    INTEGER      :: total_cg_iter
    INTEGER      :: total_petsc_iter
+   INTEGER      :: solver_type
 
    ! for chebyshev solver - whether to run cg until a certain error (tl_ch_eps)
    ! is reached, or for a certain number of steps (tl_ch_cg_presteps)

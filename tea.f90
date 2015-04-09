@@ -34,7 +34,6 @@ MODULE tea_module
   USE data_module
   USE definitions_module
   USE MPI
-  USE PETScTeaLeaf
 
   IMPLICIT NONE
 
@@ -60,9 +59,6 @@ SUBROUTINE tea_finalize
 
   INTEGER :: err
 
-  IF(use_PETSC_kernels) THEN
-    CALL cleanup_petsc()
-  ENDIF
   IF(use_HYPRE_kernels) THEN
     CALL teardown_hypre()
   ENDIF

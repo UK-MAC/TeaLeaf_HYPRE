@@ -85,6 +85,7 @@ SUBROUTINE read_input()
   verbose_on = .FALSE.
   use_PETSC_kernels=.FALSE.
   use_HYPRE_kernels=.FALSE.
+  print_HYPRE_info=0
   solver_type = 0;
   use_pgcg=.FALSE.
   pgcg_cg_iter = 10
@@ -209,6 +210,10 @@ SUBROUTINE read_input()
         solver_type = parse_getival(parse_getword(.TRUE.))
       CASE('use_hypre')
         use_HYPRE_kernels = .TRUE.
+        print_HYPRE_info = 0
+      CASE('use_hypre_print')
+        use_HYPRE_kernels = .TRUE.
+        print_HYPRE_info = 1
       CASE('use_pgcg')
         use_pgcg = .TRUE.
       CASE('pgcg_cg_iter')
