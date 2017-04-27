@@ -59,18 +59,9 @@
 #        make IEEE=1              # Will select debug options as long as a compiler is selected as well
 # e.g. make COMPILER=INTEL MPI_COMPILER=mpiifort C_MPI_COMPILER=mpiicc DEBUG=1 IEEE=1 # will compile with the intel compiler with intel debug and ieee flags included
 
-# Example of how do you download, install and compile PETSc 4.5.2, assuming installing in /home/usid, with MPICH
-# using the GNU compiler. It could work with others but might need maths libs in lib paths
-# cd /home/usid
-# git clone -b maint https://bitbucket.org/petsc/petsc petsc-3.5.2
-# cd petsc-3.5.2
-# ./configure --download-fblaslapack --download-hypre --download-mpich --with-debugging=0 --with-c2html=0
-# make PETSC_DIR=/home/usid/petsc-3.5.2 PETSC_ARCH=arch-linux2-c-opt all
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/usid/petsc-3.5.2/arch-linux2-c-opt/lib/
-# cd /home/usid/TeaLeaf_PETSc
-# COM_PATH_P=home/usid/petsc-3.5.2 make
 
-HYPRE_DIR=./libs/hypre-2.9.0b
+
+HYPRE_DIR=./libs/hypre
 
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
@@ -136,11 +127,11 @@ PETSC_DIR=${COM_PATH_P}/arch-linux2-c-opt
 PETSC_DIR_F=${COM_PATH_P}
 PETSC_LIB=-L${PETSC_DIR}/lib -lpetsc
 PETSC_INC=-I${PETSC_DIR}/include -I${PETSC_DIR_F}/include/
-REQ_LIB=-lstdc++
+REQ_LIB=-lstdc++ -lmpi_cxx
 
 ifdef NO_PETSC 
   COM_PATH_P=
-  PETSC_SOURCE=PetscLeaf_dummy.F90
+  PETSC_SOURCE=
   PETSC_DIR=
   PETSC_INC=
   PETSC_DIR_F=
@@ -148,11 +139,12 @@ ifdef NO_PETSC
 endif
 
 FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} ${PETSC_INC} $(REQ_LIB)
-CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include-c
+CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
+CXX_MPI_COMPILER=mpicxx
 
-tea_leaf: c_lover hypre_leaf.f90 Makefile
+tea_leaf: HypreStem.o timer_c.o  *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
 	data.f90			\
 	definitions.f90			\
@@ -189,16 +181,16 @@ tea_leaf: c_lover hypre_leaf.f90 Makefile
 	diffuse.f90                     \
 	timer_c.o                       \
 	HypreStem.o                     \
-	$(HYPRE_DIR)/lib/libHYPRE.a     \
+	$(HYPRE_DIR)/lib64/libHYPRE.a     \
 	$(PETSC_LIB)   			\
 	$(REQ_LIB)			\
 	-o tea_leaf; echo $(MESSAGE)
 
-c_lover: *.c Makefile
-	$(C_MPI_COMPILER) $(CFLAGS)     \
-	timer_c.c
+timer_c.o: timer_c.c
+	$(C_MPI_COMPILER) $(CFLAGS) timer_c.c
 
-hypre_leaf: *.C
+
+HypreStem.o: HypreStem.C HypreStem.h
 	$(CXX_MPI_COMPILER) $(CFLAGS) HypreStem.C
 
 clean:
