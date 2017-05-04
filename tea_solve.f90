@@ -542,24 +542,26 @@ SUBROUTINE tea_leaf()
       ENDIF
 
       IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
+      
+      IF(.NOT.use_hypre_kernels) THEN
+        IF (parallel%boss) THEN
+!$        IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+            WRITE(g_out,"('Conduction error ',e14.7)") error/initial_residual
+            WRITE(0,"('Conduction error ',e14.7)") error/initial_residual
 
-      IF (parallel%boss) THEN
-!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-          WRITE(g_out,"('Conduction error ',e14.7)") error/initial_residual
-          WRITE(0,"('Conduction error ',e14.7)") error/initial_residual
+            IF (tl_check_result) THEN
+              WRITE(0,"('EXACT error calculated as', e14.7)") exact_error
+              WRITE(g_out,"('EXACT error calculated as', e14.7)") exact_error
+            ENDIF
 
-          IF (tl_check_result) THEN
-            WRITE(0,"('EXACT error calculated as', e14.7)") exact_error
-            WRITE(g_out,"('EXACT error calculated as', e14.7)") exact_error
-          ENDIF
-
-          WRITE(g_out,"('Iteration count ',i8)") itcount-1+petsc_mod
-          WRITE(0,"('Iteration count ', i8)") itcount-1+petsc_mod
-          IF(tl_use_ppcg) WRITE(g_out,"('Total Iteration count ',i8)") (itcount-1)*tl_ppcg_inner_steps
-          IF(tl_use_ppcg) WRITE(0,"('Total Iteration count ', i8)") (itcount-1)*tl_ppcg_inner_steps
+            WRITE(g_out,"('Iteration count ',i8)") itcount-1+petsc_mod
+            WRITE(0,"('Iteration count ', i8)") itcount-1+petsc_mod
+            IF(tl_use_ppcg) WRITE(g_out,"('Total Iteration count ',i8)") (itcount-1)*tl_ppcg_inner_steps
+            IF(tl_use_ppcg) WRITE(0,"('Total Iteration count ', i8)") (itcount-1)*tl_ppcg_inner_steps
 !$      ENDIF
+        ENDIF
       ENDIF
-
+      
       ! RESET
       reset_time=timer()
       IF(use_fortran_kernels) THEN
