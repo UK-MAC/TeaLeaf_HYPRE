@@ -507,8 +507,10 @@ void HypreStem::solve(
     int iters = 0;
     if (SOLVER_TYPE_JACOBI == d_solver_type) {
         HYPRE_StructJacobiGetNumIterations(solver, &iters);
+        printf("Iteration count       %d\n", iters);
     } else {
         HYPRE_StructPCGGetNumIterations(solver, &iters);
+        printf("Iteration count       %d\n")
     }
 
     HYPRE_StructVectorGetBoxValues(x, ilower, iupper, values);
