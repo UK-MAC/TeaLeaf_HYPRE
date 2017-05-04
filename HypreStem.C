@@ -509,16 +509,16 @@ void HypreStem::solve(
     if (SOLVER_TYPE_JACOBI == d_solver_type) {
         HYPRE_StructJacobiGetNumIterations(solver, &iters);
         HYPRE_StructJacobiGetFinalRelativeResidualNorm(solver, &norm);
-        \\ print its
+        // print its
         printf("Iteration count       %d\n", iters);
-        \\ print norm
+        // print norm
         printf("Residual norm         %.17g\n", norm);
     } else {
         HYPRE_StructPCGGetNumIterations(solver, &iters);
         HYPRE_StructPCGGetFinalRelativeResidualNorm(solver, &norm);
-        \\ print its
+        // print its
         printf("Iteration count       %d\n", iters);
-        \\ print norm
+        // print norm
         printf("Residual norm         %.17g\n", norm);
     }
 
