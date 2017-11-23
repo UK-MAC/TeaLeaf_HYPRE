@@ -181,8 +181,7 @@ tea_leaf: HypreStem.o timer_c.o  *.f90 Makefile
 	diffuse.f90                     \
 	timer_c.o                       \
 	HypreStem.o                     \
-	$(HYPRE_DIR)/lib64/libHYPRE.a     \
-	$(PETSC_LIB)   			\
+	$(HYPRE_DIR)/lib/libHYPRE.a     \
 	$(REQ_LIB)			\
 	-o tea_leaf; echo $(MESSAGE)
 
