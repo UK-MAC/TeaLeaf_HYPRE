@@ -61,7 +61,7 @@
 
 
 
-HYPRE_DIR=./libs/hypre
+HYPRE_DIR=${HYPRE_PATH}
 
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
@@ -122,29 +122,37 @@ ifdef IEEE
   I3E=$(I3E_$(COMPILER))
 endif
 
-PETSC_SOURCE=PetscLeaf.F90
-PETSC_DIR=${COM_PATH_P}/arch-linux2-c-opt
-PETSC_DIR_F=${COM_PATH_P}
-PETSC_LIB=-L${PETSC_DIR}/lib -lpetsc
-PETSC_INC=-I${PETSC_DIR}/include -I${PETSC_DIR_F}/include/
-REQ_LIB=-lstdc++ -lmpi_cxx
-
-ifdef NO_PETSC 
-  COM_PATH_P=
-  PETSC_SOURCE=
-  PETSC_DIR=
-  PETSC_INC=
-  PETSC_DIR_F=
-  PETSC_LIB=
-endif
-
 FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} ${PETSC_INC} $(REQ_LIB)
 CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include -c
+
+# flags for nvcc
+# # set NV_ARCH to select the correct one
+NV_ARCH=VOLTA
+CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
+CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
+CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
+CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
+CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
+CODE_GEN_VOLTA=-gencode arch=compute_70,code=sm_70
+LDLIBS+= -lcudart  -lcusparse -lcurand -lcudadevrt -lm -lstdc++ 
+
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
-CXX_MPI_COMPILER=mpicxx
+CXX_MPI_COMPILER=mpixlC
+NVCC_COMPILER=nvcc
 
-tea_leaf: HypreStem.o timer_c.o  *.f90 Makefile
+# requires CUDA_HOME to be set - not the same on all machines
+NV_FLAGS=$(CODE_GEN_$(NV_ARCH)) -expt-extended-lambda -dc -std=c++11 --x cu -Xcompiler "-O2" -I$(CUDA_HOME)/include -I$(HYPRE_DIR)/include
+NV_FLAGS+=-DNO_ERR_CHK
+HYPRE_FLAGS=-DHYPRE_USING_CUDA
+libdir.x86_64 = lib64
+libdir.i686   = lib
+libdir.ppc64le=lib64
+MACHINE := $(shell uname -m)
+libdir = $(libdir.$(MACHINE))
+LDFLAGS+=-L$(CUDA_HOME)/$(libdir)
+
+tea_leaf: HypreStem.o link.o timer_c.o  *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
 	data.f90			\
 	definitions.f90			\
@@ -180,16 +188,20 @@ tea_leaf: HypreStem.o timer_c.o  *.f90 Makefile
 	diffuse.f90                     \
 	timer_c.o                       \
 	HypreStem.o                     \
+	link.o							\
 	$(HYPRE_DIR)/lib/libHYPRE.a     \
-	$(REQ_LIB)			\
+	$(LDFLAGS)			\
+	$(LDLIBS)			\
 	-o tea_leaf; echo $(MESSAGE)
 
 timer_c.o: timer_c.c
 	$(C_MPI_COMPILER) $(CFLAGS) timer_c.c
 
-
 HypreStem.o: HypreStem.C HypreStem.h
-	$(CXX_MPI_COMPILER) $(CFLAGS) HypreStem.C
+	nvcc -O2  -ccbin=$(CXX_MPI_COMPILER) $(NV_FLAGS) $(HYPRE_FLAGS) -c $< -o $@
+
+link.o: 
+	nvcc -O2 -ccbin=$(CXX_MPI_COMPILER) $(CODE_GEN_$(NV_ARCH)) $(HYPRE_FLAGS) -dlink -o link.o HypreStem.o $(HYPRE_DIR)/lib/libHYPRE.a  $(LDFLAGS) $(LDLIBS) 
 
 clean:
 	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf
