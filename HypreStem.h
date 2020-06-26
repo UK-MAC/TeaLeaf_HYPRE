@@ -1,6 +1,7 @@
 #ifndef HYPRE_LEAF_H_
 #define HYPRE_LEAF_H_
 
+#include "_hypre_utilities.h"
 #include "HYPRE_struct_ls.h"
 #include "HYPRE_parcsr_ls.h"
 #include "HYPRE_krylov.h"
@@ -58,8 +59,8 @@ class HypreStem {
         static HYPRE_StructSolver preconditioner;
 
 
-        static double* coefficients;
-        static double* values;
+        static HYPRE_Real* coefficients;
+        static HYPRE_Real* values;
         static int d_solver_type;
     private:
 };

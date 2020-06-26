@@ -132,8 +132,8 @@ HYPRE_StructVector HypreStem::b;
 HYPRE_StructVector HypreStem::x;
 HYPRE_StructSolver HypreStem::solver;
 HYPRE_StructSolver HypreStem::preconditioner;
-double* HypreStem::coefficients;
-double* HypreStem::values;
+HYPRE_Real* HypreStem::coefficients;
+HYPRE_Real* HypreStem::values;
 int HypreStem::d_solver_type;
 
 void HypreStem::init(
@@ -147,6 +147,7 @@ void HypreStem::init(
 {
     d_solver_type = solver_type;
 
+    HYPRE_Init();
     HYPRE_StructGridCreate(MPI_COMM_WORLD, 2, &grid);
 
     int ilower[2];
@@ -157,10 +158,13 @@ void HypreStem::init(
 
     iupper[0] = right;
     iupper[1] = top;
+    iupper[1] = top;
 
     HYPRE_StructGridSetExtents(grid, ilower, iupper);
 
     HYPRE_StructGridAssemble(grid);
+
+    HYPRE_StructGridSetDataLocation(grid, HYPRE_MEMORY_DEVICE);
 
     HYPRE_StructStencilCreate(2, 5, &stencil);
 
@@ -195,9 +199,13 @@ void HypreStem::init(
       
         /* non-Galerkin coarse grid  */
         HYPRE_StructPFMGSetRAPType(preconditioner, 1);
-      
-        /* Red/Black Gauss-Seidel (symmetric: RB pre and post-relaxation) */
-         HYPRE_StructPFMGSetRelaxType(preconditioner, 3);
+        /* TODO: Default Jacobi GPU performance better than Red/Black? 
+         * 0 : Jacobi
+         * 1 : Weighted Jacobi (default)
+         * 2 : Red/Black Gauss-Seidel (symmetric: RB pre-relaxation, BR post-relaxation)
+         * 3 : Red/Black Gauss-Seidel (nonsymmetric: RB pre- and post-relaxation)
+         */
+         HYPRE_StructPFMGSetRelaxType(preconditioner, 1);
 
         /* skip relaxation on some levels (more efficient for this problem) */
         HYPRE_StructPFMGSetSkipRelax(preconditioner, 1);
@@ -246,8 +254,8 @@ void HypreStem::init(
     int ny = top - bottom + 1;
     int nvalues = nx*ny;
 
-    coefficients = new double[nvalues*5];
-    values = new double[nvalues];
+    coefficients = hypre_CTAlloc(HYPRE_Real, nvalues*5, HYPRE_MEMORY_DEVICE);
+    values = hypre_CTAlloc(HYPRE_Real, nvalues, HYPRE_MEMORY_DEVICE);
 }
 
 void HypreStem::finalise()
@@ -270,8 +278,8 @@ void HypreStem::finalise()
     else {
         HYPRE_StructPCGDestroy(solver);
     }
-
-    delete coefficients;
+    hypre_TFree(values, HYPRE_MEMORY_DEVICE);
+    hypre_TFree(coefficients, HYPRE_MEMORY_DEVICE);
 }
 
 void HypreStem::solve(
@@ -352,95 +360,8 @@ void HypreStem::solve(
             n += nentries;
         }
     }
-
+    //TODO: coefficients data input bottleneck
     HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, nentries, stencil_indices, coefficients);
-
-    for (int i = 0; i < 4; i++) {
-        if(neighbours[i] == EXTERNAL_FACE) {
-            switch(i) {
-                case 0: 
-                    {
-                        ilower[0] = left;
-                        ilower[1] = bottom;
-                        iupper[0] = left;
-                        iupper[1] = top;
-
-                        int boundary_stencil_indices[1] = {1};
-
-                        double* boundary_coefficients = new double[ny];
-
-                        for(int j = 0; j < ny; j++) {
-                            boundary_coefficients[j] = 0.0;
-                        }
-
-                        HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
-
-                        delete [] boundary_coefficients;
-                    }
-                    break;
-                case 1: 
-                    {
-                        ilower[0] = right;
-                        ilower[1] = bottom;
-                        iupper[0] = right;
-                        iupper[1] = top;
-
-                        int boundary_stencil_indices[1] = {2};
-
-                        double* boundary_coefficients = new double[ny];
-
-                        for(int j = 0; j < ny; j++) {
-                            boundary_coefficients[j] = 0.0;
-                        }
-
-                        HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
-
-                        delete [] boundary_coefficients;
-                    }
-                    break;
-                case 2: 
-                    {
-                        ilower[0] = left;
-                        ilower[1] = bottom;
-                        iupper[0] = right;
-                        iupper[1] = bottom;
-
-                        int boundary_stencil_indices[1] = {3};
-
-                        double* boundary_coefficients = new double[nx];
-
-                        for(int j = 0; j < nx; j++) {
-                            boundary_coefficients[j] = 0.0;
-                        }
-
-                        HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
-
-                        delete [] boundary_coefficients;
-                    }
-                    break;
-                case 3:
-                    {
-                        ilower[0] = left;
-                        ilower[1] = top;
-                        iupper[0] = right;
-                        iupper[1] = top;
-
-                        int boundary_stencil_indices[1] = {4};
-
-                        double* boundary_coefficients = new double[nx];
-
-                        for(int j = 0; j < nx; j++) {
-                            boundary_coefficients[j] = 0.0;
-                        }
-
-                        HYPRE_StructMatrixSetBoxValues(A, ilower, iupper, 1, boundary_stencil_indices, boundary_coefficients);
-
-                        delete [] boundary_coefficients;
-                    }
-                    break;
-            }
-        }
-    }
 
     ilower[0] = left;
     ilower[1] = bottom;
@@ -462,17 +383,11 @@ void HypreStem::solve(
 
     for (int j = bottom; j <= top; j++) {
         for (int i = left; i <= right; i++) {
-            double c2 = Kx[ARRAY2D(i,j,xmn,ymn,nx)];
-            double c3 = Kx[ARRAY2D(i+1,j,xmn,ymn,nx)];
-            double c4 = Ky[ARRAY2D(i,j,xmn,ymn,nx)];
-            double c5 = Ky[ARRAY2D(i,j+1,xmn,ymn,nx)];
-
             values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
-
             n++;
         }
     }
-
+    //TODO: Vector data
     HYPRE_StructVectorSetBoxValues(b, ilower, iupper, values);
 
     n = 0;
@@ -500,6 +415,9 @@ void HypreStem::solve(
         HYPRE_StructPCGSolve(solver, A, b, x);
     }
 
+    // TODO: synchronize before using the vector??
+    //
+    cudaDeviceSynchronize();
     if(info == 1) {
       HYPRE_StructVectorPrint("x", x, 0);
     }
