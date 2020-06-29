@@ -158,7 +158,6 @@ void HypreStem::init(
 
     iupper[0] = right;
     iupper[1] = top;
-    iupper[1] = top;
 
     HYPRE_StructGridSetExtents(grid, ilower, iupper);
 
@@ -313,7 +312,6 @@ void HypreStem::solve(
     iupper[1] = top;
 
     int nx = (x_max - x_min + 1) + 4;
-    int ny = (y_max - y_min + 1) + 4;
 
     int nentries = 5;
     int stencil_indices[5] = {0,1,2,3,4};
