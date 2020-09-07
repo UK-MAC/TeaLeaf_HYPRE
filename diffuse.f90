@@ -26,6 +26,7 @@ SUBROUTINE diffuse
   USE timestep_module
   USE tea_leaf_module
   USE set_field_module
+  USE caliper_mod
 
   IMPLICIT NONE
 
@@ -42,7 +43,9 @@ SUBROUTINE diffuse
   second_step=0.0 ! In order to prevent unused error
 
   ! copy time level 0 to time level 1
+  call cali_begin_region('set_field')
   CALL set_field()
+  call cali_end_region('set_field')
 
   DO
 

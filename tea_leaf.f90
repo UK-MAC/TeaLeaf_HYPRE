@@ -35,12 +35,34 @@
 PROGRAM tea_leaf
 
   USE tea_module
+  USE caliper_mod
 
   IMPLICIT NONE
+
+! Caliper region profile 
+  type(BufferedRegionProfile) :: rp
+  type(ConfigManager)   :: mgr
+
+  logical               :: ret
+  integer               :: argc
+  character(len=:), allocatable :: errmsg
+  character(len=256)    :: arg
 
 !$ INTEGER :: OMP_GET_NUM_THREADS,OMP_GET_THREAD_NUM
 
   CALL tea_init_comms()
+
+  mgr = ConfigManager_new()
+  argc = command_argument_count()
+  if (argc .ge. 1) then
+     CALL get_command_argument(1, arg)
+     CALL mgr%add(arg)
+     ret = mgr%error()
+     if (ret) then
+         errmsg = mgr%error_msg()
+         write(*,*) 'ConfigManager: ', errmsg
+     endif
+  endif
 
 !$OMP PARALLEL
   IF(parallel%boss)THEN
@@ -63,11 +85,29 @@ PROGRAM tea_leaf
   ENDIF
 !$OMP END PARALLEL
 
+  ! Start configured profiling channels
+  CALL mgr%start
+  CALL cali_begin_region('tea_main')
   CALL initialise
+  
+  ! Start region profile
+  rp = BufferedRegionProfile_new()
+  CALL rp%start()
 
+  CALL cali_begin_region('diffuse')
   CALL diffuse
+  CALL cali_end_region('diffuse')
+
+  ! Stop the region profile and clear
+  CALL rp%stop
+  CALL rp%clear
+  CALL BufferedRegionProfile_delete(rp)
+
+  CALL cali_end_region('tea_main')
 
   ! Deallocate everything
-  
+  CALL mgr%flush
+  CALL ConfigManager_delete(mgr)
+
 END PROGRAM tea_leaf
 

@@ -34,7 +34,8 @@ MODULE tea_module
   USE data_module
   USE definitions_module
   USE MPI
-
+  USE caliper_mod 
+  
   IMPLICIT NONE
 
 CONTAINS
@@ -80,6 +81,7 @@ SUBROUTINE tea_init_comms
   size=1
 
   CALL MPI_INIT(err)
+  CALL cali_mpi_init()
 
   CALL MPI_COMM_RANK(MPI_COMM_WORLD,rank,err)
   CALL MPI_COMM_SIZE(MPI_COMM_WORLD,size,err)

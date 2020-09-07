@@ -1,4 +1,6 @@
 #include "HypreStem.h"
+#include <caliper/cali.h>
+#include <caliper/cali-manager.h>
 
 #include <iostream>
 
@@ -56,13 +58,19 @@ void setup_hypre_(
     double epsilon = *eps;
     int max_iters = *mx_itrs;
     int solver_type = *slvr_tp;
-
+ 
+    CALI_CXX_MARK_FUNCTION;
+    //CALI_MARK_BEGIN("Hypreinit");
     HypreStem::init(left,right,bottom,top,epsilon,max_iters,solver_type);
+    //CALI_MARK_END("Hypreinit");
 }
 
 void teardown_hypre_()
 {
+    CALI_CXX_MARK_FUNCTION;
+    //CALI_MARK_BEGIN("Hyprefinalise");
     HypreStem::finalise();
+    //CALI_MARK_END("Hyprefinalise");
 }
 
 void hypre_solve_(
@@ -102,7 +110,9 @@ void hypre_solve_(
     double rx = *rxp;
     double ry = *ryp;
 
-    
+    CALI_CXX_MARK_FUNCTION;
+    //CALI_MARK_BEGIN("Hypresolve");
+
     HypreStem::solve(
             left,
             right,
@@ -123,6 +133,7 @@ void hypre_solve_(
             Ky,
             u0,
             neighbours);
+    //CALI_MARK_BEGIN("Hypresolve");
 }
 
 HYPRE_StructGrid HypreStem::grid;
@@ -145,6 +156,7 @@ void HypreStem::init(
         int max_iters,
         int solver_type)
 {
+
     d_solver_type = solver_type;
 
     HYPRE_StructGridCreate(MPI_COMM_WORLD, 2, &grid);
@@ -272,6 +284,7 @@ void HypreStem::finalise()
     }
 
     delete coefficients;
+
 }
 
 void HypreStem::solve(
@@ -295,6 +308,7 @@ void HypreStem::solve(
         double* u0,
         int* neighbours)
 {
+    
     HYPRE_StructMatrixInitialize(A);
 
     int ilower[2], iupper[2];
@@ -311,6 +325,7 @@ void HypreStem::solve(
     int stencil_indices[5] = {0,1,2,3,4};
 
     int n = 0;
+
     for(int k = bottom; k <= top; k++) {
         for(int j = left; j <= right; j++) {
 

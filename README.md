@@ -1,25 +1,34 @@
-This version of TeaLeaf requires HYPRE. We use version 2.9.0b.
+This version of TeaLeaf requires HYPRE. We use version 2.19.0.
 
 ## HYPRE
 
-- Download `hypre-2.9.0b` from computation.llnl.gov/casc/hypre/software.html
+- Download `hypre-2.19.0` from https://github.com/hypre-space/hypre
   - Babel interfaces are _not_ required.
 - Extract the files.
 - Inside the HYPRE `src` directory, use configure to set up the install location.
-  - If you are only building HYPRE for TeaLeaf, consider installing it in the `libs/hypre-2.9.0b` folder in the TeaLeaf_HYPRE directory
+  - If you are only building HYPRE for TeaLeaf, consider installing it in the `libs/hypre-2.19.0` folder in the TeaLeaf_HYPRE directory
   - Other options can also be set using the `configure` command. Use `./configure --help` to see them all.
-  - If default compiler names are used such as mpif90, then this should work `./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.9.0b`
-  - To specify compilers, this is an example: `CC=mpiicc CXX=mpiicpc F77=mpiifort ./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.9.0b`
+  - If default compiler names are used such as mpif90, then this should work `./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.19.0`
+  - To specify compilers, this is an example: `CC=mpiicc CXX=mpiicpc F77=mpiifort ./configure --prefix=$HOME/TeaLeaf_HYPRE/libs/hypre-2.19.0`
 - We recommend that you use the same compilers for building both HYPRE and TeaLeaf.
 - Once HYPRE is configured, use `make` and then `make install` to install HYPRE.
+
+## Caliper
+
+ - Download `Caliper` from https://github.com/LLNL/Caliper
+ - Caliper requires cmake 3.1+ and c++11 compiler
+ - For example: 
+ -  $ cd Caliper
+ -  $ mkdir build && cd build
+ -  $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> -DWITH_FORTRAN=ON -DWITH_MPI=ON -DCMAKE_BUILD_TYPE=Release .. 
 
 ## TeaLeaf
 
 ## Compling
 
-- If you didn't install HYPRE to `libs/hypre-2.9.0b' edit the TeaLeaf `Makefile` and specify the directory that you have installed HYPRE in.
+- If you didn't install HYPRE to `libs/hypre-2.19.0' edit the TeaLeaf `Makefile` and specify the directory that you have installed HYPRE in.
 - In many case just typing `make` in the required software version will work. 
-- Sometimes the hypre library will be in libs/hypre-2.9.0b/lib and sometimes libs/hypre-2.9.0b/lib64, depending the local system.
+- Sometimes the hypre library will be in libs/hypre-2.19.0/lib and sometimes libs/hypre-2.19.0/lib64, depending the local system.
 
 If the MPI compilers have different names then the build process needs to 
 notified of this by defining two environment variables, `MPI_COMPILER` and 

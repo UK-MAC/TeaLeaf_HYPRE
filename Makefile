@@ -62,6 +62,7 @@
 
 
 HYPRE_DIR=./libs/hypre
+CALIPER_DIR=./libs/caliper
 
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
@@ -84,9 +85,9 @@ FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
 FLAGS_XL       = -O5 -qarch=pwr8 -qtune=pwr8 -qextname -qipa=partition=large -g -qfullpath -Q -qsigtrap -qextname=flush:timer_c:unpack_top_bottom_buffers_c:pack_top_bottom_buffers_c:unpack_left_right_buffers_c:pack_left_right_buffers_c:field_summary_kernel_c:update_halo_kernel_c:generate_chunk_kernel_c:initialise_chunk_kernel_c:calc_dt_kernel_c -qlistopt -qattr=full -qlist -qreport -qxref=full -qsource -qsuppress=1506-224:1500-036
 FLAGS_          = -O3
-CFLAGS_INTEL     = -O3 -no-prec-div -restrict #-fno-alias
+CFLAGS_INTEL     = -O3 -no-prec-div -restrict -std=c++11 #-fno-alias
 CFLAGS_SUN       = -fast -xipo=2
-CFLAGS_GNU       = -O3 -march=native -funroll-loops
+CFLAGS_GNU       = -O3 -march=native -funroll-loops -std=c++11
 CFLAGS_CRAY      = -em -h list=a
 CFLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 CFLAGS_PATHSCALE = -O3
@@ -127,7 +128,7 @@ PETSC_DIR=${COM_PATH_P}/arch-linux2-c-opt
 PETSC_DIR_F=${COM_PATH_P}
 PETSC_LIB=-L${PETSC_DIR}/lib -lpetsc
 PETSC_INC=-I${PETSC_DIR}/include -I${PETSC_DIR_F}/include/
-REQ_LIB=-lstdc++ -lmpi_cxx
+REQ_LIB=-lstdc++# -lmpi_cxx
 
 ifdef NO_PETSC 
   COM_PATH_P=
@@ -138,8 +139,8 @@ ifdef NO_PETSC
   PETSC_LIB=
 endif
 
-FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} ${PETSC_INC} $(REQ_LIB)
-CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include -c
+FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} ${PETSC_INC} -I$(CALIPER_DIR)/include/caliper/fortran  $(REQ_LIB)
+CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include -I$(CALIPER_DIR)/include -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 CXX_MPI_COMPILER=mpicxx
@@ -181,6 +182,7 @@ tea_leaf: HypreStem.o timer_c.o  *.f90 Makefile
 	timer_c.o                       \
 	HypreStem.o                     \
 	$(HYPRE_DIR)/lib/libHYPRE.a     \
+	-L$(CALIPER_DIR)/lib64 -lcaliper \
 	$(REQ_LIB)			\
 	-o tea_leaf; echo $(MESSAGE)
 
