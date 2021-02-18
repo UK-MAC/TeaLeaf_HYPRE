@@ -59,9 +59,6 @@ SUBROUTINE tea_finalize
 
   INTEGER :: err
 
-  IF(use_HYPRE_kernels) THEN
-    CALL teardown_hypre()
-  ENDIF
   CLOSE(g_out)
   CALL FLUSH(0)
   CALL FLUSH(6)

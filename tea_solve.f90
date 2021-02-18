@@ -493,6 +493,16 @@ SUBROUTINE tea_leaf()
 
       IF (use_HYPRE_kernels) THEN
         ! HYPRE STUFF HERE
+
+        CALL setup_hypre(chunks(c)%field%left,  &
+                         chunks(c)%field%right, &
+                         chunks(c)%field%bottom,&
+                         chunks(c)%field%top,   &
+                         eps,                   &
+                         max_iters,             &
+                         solver_type)
+
+
         itcount=0
         CALL hypre_solve(chunks(c)%field%left,       &
                          chunks(c)%field%right,      &

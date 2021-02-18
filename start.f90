@@ -91,18 +91,6 @@ SUBROUTINE start
 
   CALL tea_barrier
 
-  IF(use_HYPRE_kernels)THEN
-    DO c=1,chunks_per_task
-      CALL setup_hypre(chunks(c)%field%left,  &
-                       chunks(c)%field%right, &
-                       chunks(c)%field%bottom,&
-                       chunks(c)%field%top,   &
-                       eps,                   &
-                       max_iters,             &
-                       solver_type)
-    ENDDO
-  ENDIF
-
   DO c=1,chunks_per_task
     IF(chunks(c)%task.EQ.parallel%task)THEN
       CALL tea_allocate_buffers(c)

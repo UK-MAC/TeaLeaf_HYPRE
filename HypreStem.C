@@ -255,6 +255,7 @@ void HypreStem::finalise()
     HYPRE_StructMatrixDestroy(A);
     HYPRE_StructVectorDestroy(b);
     HYPRE_StructVectorDestroy(x);
+    HYPRE_StructGridDestroy(grid); 
 
     if(d_solver_type == SOLVER_TYPE_JACOBI) {
         HYPRE_StructJacobiDestroy(solver);
@@ -271,6 +272,7 @@ void HypreStem::finalise()
         HYPRE_StructPCGDestroy(solver);
     }
 
+    delete values;
     delete coefficients;
 }
 

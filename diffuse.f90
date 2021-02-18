@@ -53,7 +53,11 @@ SUBROUTINE diffuse
     CALL timestep()
 
     CALL tea_leaf()
-    
+
+    IF(use_HYPRE_kernels) THEN
+      CALL teardown_hypre()
+    ENDIF
+
     time = time + dt
 
     IF(summary_frequency.NE.0) THEN
