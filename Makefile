@@ -57,9 +57,7 @@
 #        make clean               # Will clean up the directory
 #        make DEBUG=1             # Will select debug options. If a compiler is selected, it will use compiler specific debug options
 #        make IEEE=1              # Will select debug options as long as a compiler is selected as well
-# e.g. make COMPILER=INTEL MPI_COMPILER=mpiifort C_MPI_COMPILER=mpiicc DEBUG=1 IEEE=1 # will compile with the intel compiler with intel debug and ieee flags included
-
-
+# e.g. make COMPILER=INTEL MPI_COMPILER=mpiifort C_MPI_COMPILER=mpiicc DEBUG=1 IEEE=1 HYPRE_DIR=<install location> # will compile with the intel compiler with intel debug and ieee flags included 
 
 HYPRE_DIR=./libs/hypre
 
@@ -138,8 +136,8 @@ ifdef NO_PETSC
   PETSC_LIB=
 endif
 
-FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} ${PETSC_INC} $(REQ_LIB)
-CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include -c
+FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} $(REQ_LIB)
+CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} -I$(HYPRE_DIR)/include -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 CXX_MPI_COMPILER=mpicxx
