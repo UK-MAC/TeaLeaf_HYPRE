@@ -1,5 +1,4 @@
 #include "HypreStem.h"
-
 #include <iostream>
 
 #define ARRAY2D(i,j,imin,jmin,ni) (i-(imin))+(((j)-(jmin))*(ni))
@@ -165,6 +164,10 @@ void HypreStem::init(
 
     HYPRE_StructGridSetDataLocation(grid, HYPRE_MEMORY_DEVICE);
 
+    HYPRE_SetMemoryLocation(HYPRE_MEMORY_DEVICE);
+
+    HYPRE_SetExecutionPolicy(HYPRE_EXEC_DEVICE);
+
     HYPRE_StructStencilCreate(2, 5, &stencil);
 
     int offsets[5][2] = {{0,0}, {-1,0}, {1,0}, {0,-1}, {0,1}};
@@ -207,7 +210,7 @@ void HypreStem::init(
          HYPRE_StructPFMGSetRelaxType(preconditioner, 1);
 
         /* skip relaxation on some levels (more efficient for this problem) */
-        HYPRE_StructPFMGSetSkipRelax(preconditioner, 1);
+        HYPRE_StructPFMGSetSkipRelax(preconditioner, 0);
 
         HYPRE_StructPCGSetTol(solver, eps);
         HYPRE_StructPCGSetMaxIter(solver, max_iters);
@@ -312,7 +315,7 @@ void HypreStem::solve(
     iupper[1] = top;
 
     int nx = (x_max - x_min + 1) + 4;
-
+    
     int nentries = 5;
     int stencil_indices[5] = {0,1,2,3,4};
 
@@ -375,10 +378,8 @@ void HypreStem::solve(
 
     int xmn = left-2;
     int ymn = bottom-2;
-    nx = (x_max - x_min + 1) + 4;
 
     n = 0;
-
     for (int j = bottom; j <= top; j++) {
         for (int i = left; i <= right; i++) {
             values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
@@ -387,15 +388,6 @@ void HypreStem::solve(
     }
     //TODO: Vector data
     HYPRE_StructVectorSetBoxValues(b, ilower, iupper, values);
-
-    n = 0;
-
-    for (int j = bottom; j <= top; j++) {
-        for (int i = left; i <= right; i++) {
-            values[n] = u0[ARRAY2D(i,j,xmn,ymn,nx)];
-            n++;
-        }
-    }
 
     HYPRE_StructVectorSetBoxValues(x, ilower, iupper, values);
 

@@ -78,7 +78,7 @@ OMP=$(OMP_$(COMPILER))
 
 FLAGS_INTEL     = -O3 -no-prec-div -fpp
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
-FLAGS_GNU       = -O3 -march=native -funroll-loops
+FLAGS_GNU       = -O3 -mcpu=native -funroll-loops
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
 FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
@@ -86,7 +86,7 @@ FLAGS_XL       = -O5 -qarch=pwr8 -qtune=pwr8 -qextname -qipa=partition=large -g 
 FLAGS_          = -O3
 CFLAGS_INTEL     = -O3 -no-prec-div -restrict #-fno-alias
 CFLAGS_SUN       = -fast -xipo=2
-CFLAGS_GNU       = -O3 -march=native -funroll-loops
+CFLAGS_GNU       = -O3 -mcpu=native -funroll-loops
 CFLAGS_CRAY      = -em -h list=a
 CFLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 CFLAGS_PATHSCALE = -O3
@@ -134,15 +134,16 @@ CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
 CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
 CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
 CODE_GEN_VOLTA=-gencode arch=compute_70,code=sm_70
-LDLIBS+= -lcudart  -lcusparse -lcurand -lcudadevrt -lm -lstdc++ 
+LDLIBS+= -lcudart  -lcusparse -lcurand -lcudadevrt -lm -lstdc++ \
+		 -L/opt/ibm/xlC/16.1.1/lib -L/opt/ibm/lib -libmc++  
 
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
-CXX_MPI_COMPILER=mpixlC
+CXX_MPI_COMPILER=mpic++
 NVCC_COMPILER=nvcc
 
 # requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=$(CODE_GEN_$(NV_ARCH)) -expt-extended-lambda -dc -std=c++11 --x cu -Xcompiler "-O2" -I$(CUDA_HOME)/include -I$(HYPRE_DIR)/include
+NV_FLAGS=$(CODE_GEN_$(NV_ARCH)) -g -lineinfo -expt-extended-lambda -dc -std=c++11 --x cu -Xcompiler "-O2" -I$(CUDA_HOME)/include -I$(HYPRE_DIR)/include
 NV_FLAGS+=-DNO_ERR_CHK
 HYPRE_FLAGS=-DHYPRE_USING_CUDA
 libdir.x86_64 = lib64

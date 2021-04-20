@@ -7,6 +7,9 @@
 #include "HYPRE_krylov.h"
 #include "HYPRE_sstruct_ls.h"
 
+#include "_hypre_struct_mv.h"
+#include "HYPRE_lobpcg.h"
+
 #define SOLVER_TYPE_JACOBI 1
 #define SOLVER_TYPE_PFMG   2
 #define SOLVER_TYPE_SMG    3
