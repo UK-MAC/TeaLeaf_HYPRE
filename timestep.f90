@@ -30,6 +30,7 @@ SUBROUTINE timestep()
   USE update_halo_module
   USE calc_dt_module
   USE definitions_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -39,7 +40,11 @@ SUBROUTINE timestep()
 
   REAL(KIND=8)    :: kernel_time,timer
 
+  TYPE(SCOPE_TYPE):: caliprof
+
 !$ INTEGER :: OMP_GET_THREAD_NUM
+
+  CALL caliprof%create("timestep")
 
   IF(profiler_on) kernel_time=timer()
   DO c = 1, chunks_per_task

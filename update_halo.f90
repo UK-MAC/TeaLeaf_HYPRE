@@ -28,10 +28,14 @@ SUBROUTINE update_halo(fields,depth)
 
   USE tea_module
   USE update_halo_kernel_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
   INTEGER :: c,fields(NUM_FIELDS),depth
+  TYPE(SCOPE_TYPE):: caliprof
+
+  CALL caliprof%create("update_halo")
 
   CALL tea_exchange(fields,depth)
 

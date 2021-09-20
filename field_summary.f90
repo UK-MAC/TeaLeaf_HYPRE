@@ -28,6 +28,7 @@ SUBROUTINE field_summary()
 
   USE tea_module
   USE field_summary_kernel_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -39,6 +40,10 @@ SUBROUTINE field_summary()
   INTEGER      :: c
 
   REAL(KIND=8) :: kernel_time,timer
+
+  TYPE(SCOPE_TYPE):: caliprof
+
+  CALL caliprof%create("field_summary")
 
   IF(parallel%boss)THEN
     WRITE(g_out,*)

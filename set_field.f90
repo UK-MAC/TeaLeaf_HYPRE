@@ -27,12 +27,17 @@ SUBROUTINE set_field()
 
   USE tea_module
   USE set_field_kernel_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
   INTEGER :: c
 
   REAL(KIND=8) :: kernel_time,timer
+
+  TYPE(scope_type) :: caliprof
+
+  CALL caliprof%create("set_field")
 
   IF(profiler_on) kernel_time=timer()
   DO c=1,chunks_per_task

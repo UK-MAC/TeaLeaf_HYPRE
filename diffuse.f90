@@ -26,7 +26,7 @@ SUBROUTINE diffuse
   USE timestep_module
   USE tea_leaf_module
   USE set_field_module
-  USE caliper_mod
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -37,15 +37,15 @@ SUBROUTINE diffuse
   REAL(KIND=8)    :: step_time,step_grind
   REAL(KIND=8)    :: first_step,second_step
   REAL(KIND=8)    :: kernel_total,totals(parallel%max_task)
+  TYPE(scope_type) :: caliprof
 
   timerstart = timer()
+  CALL caliprof%create("diffuse")
 
   second_step=0.0 ! In order to prevent unused error
 
   ! copy time level 0 to time level 1
-  call cali_begin_region('set_field')
   CALL set_field()
-  call cali_end_region('set_field')
 
   DO
 

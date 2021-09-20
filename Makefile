@@ -61,8 +61,9 @@
 
 
 
-HYPRE_DIR=./libs/hypre
-CALIPER_DIR=./libs/caliper
+#HYPRE_DIR=./libs/hypre
+
+HYPRE_DIR=$(HYPRE_ROOT)
 
 ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
@@ -139,14 +140,21 @@ ifdef NO_PETSC
   PETSC_LIB=
 endif
 
-FLAGS=${FLAGS_$(COMPILER)} ${OMP} ${I3E} ${OPTIONS} ${PETSC_INC} -I$(CALIPER_DIR)/include/caliper/fortran  $(REQ_LIB)
-CFLAGS=${CFLAGS_$(COMPILER)} ${OMP} ${I3E} ${C_OPTIONS} ${PETSC_INC} -I$(HYPRE_DIR)/include -I$(CALIPER_DIR)/include -c
+CALIPER_DIR=$(CALIPER_ROOT)
+CALIPER_F=-I$(CALIPER_DIR)/include/caliper/fortran
+CALIPER_C=-I$(CALIPER_DIR)/include
+LDLIBS=-L$(CALIPER_DIR)/lib -lcaliper -lstdc++ -lmpi_cxx
+
+FLAGS=$(FLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP4) $(CALIPER_F)
+CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(C_OPTIONS) -I$(HYPRE_DIR)/include $(CALIPER_C) -c
+
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 CXX_MPI_COMPILER=mpicxx
 
 tea_leaf: HypreStem.o timer_c.o  *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
+	caliscope.f90	\
 	data.f90			\
 	definitions.f90			\
 	pack_kernel.f90			\

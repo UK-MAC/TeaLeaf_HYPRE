@@ -35,7 +35,6 @@
 PROGRAM tea_leaf
 
   USE tea_module
-  USE caliper_mod
 
   IMPLICIT NONE
 
@@ -87,23 +86,18 @@ PROGRAM tea_leaf
 
   ! Start configured profiling channels
   CALL mgr%start
-  CALL cali_begin_region('tea_main')
   CALL initialise
   
   ! Start region profile
   rp = BufferedRegionProfile_new()
   CALL rp%start()
 
-  CALL cali_begin_region('diffuse')
   CALL diffuse
-  CALL cali_end_region('diffuse')
 
   ! Stop the region profile and clear
   CALL rp%stop
   CALL rp%clear
   CALL BufferedRegionProfile_delete(rp)
-
-  CALL cali_end_region('tea_main')
 
   ! Deallocate everything
   CALL mgr%flush
